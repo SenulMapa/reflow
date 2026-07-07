@@ -14,7 +14,9 @@ const LLM_URL = process.env.EXPO_PUBLIC_LLM_URL;
 // per-user protection comes with the multi-user phase (Supabase Auth).
 const LLM_TOKEN = process.env.EXPO_PUBLIC_LLM_TOKEN;
 
-export type LLMTask = "parse_block" | "quiz" | "grade_feynman";
+export type LLMTask = "parse_block" | "quiz" | "grade_feynman" | "plan_deck" | "chat";
+
+export type ChatMsg = { role: "user" | "assistant" | "system"; content: string };
 
 export function isLLMConfigured(): boolean {
   return typeof LLM_URL === "string" && LLM_URL.length > 0;
@@ -32,4 +34,35 @@ export async function generate<T = unknown>(task: LLMTask, input: unknown): Prom
   });
   if (!res.ok) throw new Error(`LLM request failed: ${res.status}`);
   return (await res.json()) as T;
+}
+
+/**
+ * Ask the tutor to arrange the dashboard deck from the student model. Fail-safe:
+ * returns null on any error or when the LLM isn't configured, so callers fall
+ * back to the deterministic deck.
+ */
+export async function planDeck(studentModel: unknown): Promise<unknown | null> {
+  if (!isLLMConfigured()) return null;
+  try {
+    return await generate("plan_deck", { studentModel });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Grounded tutor chat. Returns the assistant's reply string, or null on any
+ * error / when the LLM isn't configured.
+ */
+export async function chatReply(
+  messages: ChatMsg[],
+  studentModel: unknown
+): Promise<string | null> {
+  if (!isLLMConfigured()) return null;
+  try {
+    const res = await generate<{ reply?: string }>("chat", { messages, studentModel });
+    return typeof res?.reply === "string" ? res.reply : null;
+  } catch {
+    return null;
+  }
 }

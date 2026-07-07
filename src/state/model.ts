@@ -2,11 +2,13 @@ import type { Interval } from "../engine/types";
 import { planWeek, type WeekPlan } from "../engine/week";
 import {
   buildWeekInput,
+  daysToNearestExam,
   DEFAULT_AVAILABILITY,
   type AvailabilityTemplate,
 } from "../lib/buildWeek";
 import { DEMO_SUBJECTS, type StudySubject, type Topic } from "../data/subjects";
-import { EARN, type Progress, type RewardItem } from "./rewards";
+import { EARN, levelForXp, type Progress, type RewardItem } from "./rewards";
+import type { DeckPlan } from "../ui/deck";
 
 /**
  * Pure app state + reducers. No React, no storage, no I/O — so the whole state
@@ -77,6 +79,14 @@ export function classifySource(uri: string): Source["type"] {
   return "link";
 }
 
+/** A single message in the tutor chat thread. */
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  at: string;
+};
+
 export interface ReflowState {
   config: ReflowConfig;
   week: WeekState;
@@ -87,6 +97,10 @@ export interface ReflowState {
   /** Per-session completion, keyed by sessionKeyOf(). */
   sessionStatus: Record<string, "done" | "skipped">;
   progress: Progress;
+  /** Cached tutor-arranged dashboard deck (null until first planned). */
+  deck?: DeckPlan | null;
+  /** Tutor chat thread. */
+  chat: ChatMessage[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -105,6 +119,8 @@ export function initialState(refDateISO: string): ReflowState {
     focusSessions: [],
     sources: [],
     sessionStatus: {},
+    deck: null,
+    chat: [],
     progress: {
       coins: 240,
       xp: 320,
@@ -321,6 +337,23 @@ export function setSessionStatus(
   return { ...s, sessionStatus: next };
 }
 
+// ── Tutor deck + chat (v2) ──────────────────────────────────────────────────
+
+export const setDeck = (s: ReflowState, deck: DeckPlan | null): ReflowState => ({
+  ...s,
+  deck,
+});
+
+export const appendChat = (s: ReflowState, msg: ChatMessage): ReflowState => ({
+  ...s,
+  chat: [...s.chat, msg],
+});
+
+export const clearChat = (s: ReflowState): ReflowState => ({
+  ...s,
+  chat: [],
+});
+
 // ── Reward economy (earn by studying, spend on leisure) ─────────────────────
 
 const shiftDate = (iso: string, days: number) => {
@@ -387,6 +420,49 @@ export function computePlan(s: ReflowState): WeekPlan {
       examWindowDays: config.examWindowDays,
     })
   );
+}
+
+/**
+ * A compact, JSON-serialisable snapshot of the student passed to every tutor
+ * call (plan_deck, chat). Small on purpose — subjects + exam countdowns, this
+ * week's planned minutes per subject, progress, and a couple of activity signals.
+ * All dates derive from s.week.refDateISO; never calls Date.now().
+ */
+export function studentModel(s: ReflowState) {
+  const refISO = s.week.refDateISO;
+
+  const subjects = s.config.subjects.map((subj) => ({
+    id: subj.id,
+    name: subj.name,
+    daysToExam: daysToNearestExam(subj.id, refISO),
+  }));
+
+  const plan = computePlan(s);
+  const plannedMinutes: Record<string, number> = {};
+  for (const a of plan.allocations) {
+    plannedMinutes[a.subjectId] = Math.round(a.hours * 60);
+  }
+
+  // Focus minutes across the 7 days of the week starting at refDateISO.
+  let focusMinutesThisWeek = 0;
+  for (let i = 0; i < 7; i++) {
+    focusMinutesThisWeek += focusMinutesOn(s, shiftDate(refISO, i));
+  }
+
+  const corrections = s.corrections.filter((c) => !c.reviewed).length;
+
+  return {
+    subjects,
+    weeklyGoalHours: s.config.weeklyGoalHours,
+    plan: { plannedMinutes },
+    progress: {
+      coins: s.progress.coins,
+      streakDays: s.progress.streakDays,
+      level: levelForXp(s.progress.xp),
+    },
+    corrections,
+    focusMinutesThisWeek,
+  };
 }
 
 function clamp(x: number, lo: number, hi: number): number {

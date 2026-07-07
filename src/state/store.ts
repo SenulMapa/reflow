@@ -4,7 +4,8 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { Interval } from "../engine/types";
 import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
-import type { Correction, FocusSession, PastPaper, ReflowState, Source } from "./model";
+import type { ChatMessage, Correction, FocusSession, PastPaper, ReflowState, Source } from "./model";
+import type { DeckPlan } from "../ui/deck";
 import type { RewardItem } from "./rewards";
 
 /** Calendar Monday (YYYY-MM-DD) of the current local week. */
@@ -43,6 +44,9 @@ interface Store {
   addReward: (item: RewardItem) => void;
   removeReward: (id: string) => void;
   redeemReward: (id: string, date: string) => void;
+  setDeck: (deck: DeckPlan | null) => void;
+  appendChat: (msg: ChatMessage) => void;
+  clearChat: () => void;
   reset: () => void;
 }
 
@@ -81,10 +85,13 @@ export const useStore = create<Store>()(
       addReward: (item) => set(apply((s) => M.addReward(s, item))),
       removeReward: (id) => set(apply((s) => M.removeReward(s, id))),
       redeemReward: (id, date) => set(apply((s) => M.redeemReward(s, id, date))),
+      setDeck: (deck) => set(apply((s) => M.setDeck(s, deck))),
+      appendChat: (msg) => set(apply((s) => M.appendChat(s, msg))),
+      clearChat: () => set(apply((s) => M.clearChat(s))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v7",
+      name: "reflow-state-v8",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {
