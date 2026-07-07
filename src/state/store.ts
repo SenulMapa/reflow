@@ -2,9 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { Interval } from "../engine/types";
-import type { StudySubject } from "../data/subjects";
+import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
-import type { ReflowState } from "./model";
+import type { Correction, ReflowState } from "./model";
 
 /** Calendar Monday (YYYY-MM-DD) of the current local week. */
 export function currentWeekStart(now: Date = new Date()): string {
@@ -25,6 +25,11 @@ interface Store {
   removeBlock: (date: string, index: number) => void;
   clearBlocks: () => void;
   setRefDate: (iso: string) => void;
+  addTopic: (subjectId: string, topic: Topic) => void;
+  setTopicConfidence: (subjectId: string, topicId: string, confidence: number) => void;
+  addCorrection: (c: Correction) => void;
+  toggleCorrectionReviewed: (id: string) => void;
+  removeCorrection: (id: string) => void;
   reset: () => void;
 }
 
@@ -45,10 +50,16 @@ export const useStore = create<Store>()(
       removeBlock: (date, i) => set(apply((s) => M.removeBlock(s, date, i))),
       clearBlocks: () => set(apply((s) => M.clearBlocks(s))),
       setRefDate: (iso) => set(apply((s) => M.setRefDate(s, iso))),
+      addTopic: (subjectId, topic) => set(apply((s) => M.addTopic(s, subjectId, topic))),
+      setTopicConfidence: (subjectId, topicId, c) =>
+        set(apply((s) => M.setTopicConfidence(s, subjectId, topicId, c))),
+      addCorrection: (c) => set(apply((s) => M.addCorrection(s, c))),
+      toggleCorrectionReviewed: (id) => set(apply((s) => M.toggleCorrectionReviewed(s, id))),
+      removeCorrection: (id) => set(apply((s) => M.removeCorrection(s, id))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v1",
+      name: "reflow-state-v2",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {

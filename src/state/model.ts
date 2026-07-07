@@ -5,7 +5,7 @@ import {
   DEFAULT_AVAILABILITY,
   type AvailabilityTemplate,
 } from "../lib/buildWeek";
-import { DEMO_SUBJECTS, type StudySubject } from "../data/subjects";
+import { DEMO_SUBJECTS, type StudySubject, type Topic } from "../data/subjects";
 
 /**
  * Pure app state + reducers. No React, no storage, no I/O — so the whole state
@@ -26,15 +26,27 @@ export interface WeekState {
   blocks: Record<string, Interval[]>;
 }
 
+/** A Correction Booklet entry — a logged mistake + its fix, tied to a topic. */
+export interface Correction {
+  id: string;
+  subjectId: string;
+  topicId?: string;
+  mistake: string;
+  fix: string;
+  date: string;
+  reviewed: boolean;
+}
+
 export interface ReflowState {
   config: ReflowConfig;
   week: WeekState;
+  corrections: Correction[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
   return {
     config: {
-      subjects: DEMO_SUBJECTS.map((s) => ({ ...s })),
+      subjects: DEMO_SUBJECTS.map((s) => ({ ...s, topics: s.topics?.map((t) => ({ ...t })) })),
       availability: DEFAULT_AVAILABILITY,
       commitments: {},
       weeklyGoalHours: 24,
@@ -42,6 +54,7 @@ export function initialState(refDateISO: string): ReflowState {
       examWindowDays: 14,
     },
     week: { refDateISO, blocks: {} },
+    corrections: [],
   };
 }
 
@@ -105,6 +118,65 @@ export const clearBlocks = (s: ReflowState): ReflowState => ({
 export const setRefDate = (s: ReflowState, refDateISO: string): ReflowState => ({
   ...s,
   week: { ...s.week, refDateISO },
+});
+
+// ── Topics + Correction Booklet (the weakness loop) ─────────────────────────
+
+export function addTopic(s: ReflowState, subjectId: string, topic: Topic): ReflowState {
+  return withConfig(s, {
+    subjects: s.config.subjects.map((subj) =>
+      subj.id === subjectId ? { ...subj, topics: [...(subj.topics ?? []), topic] } : subj
+    ),
+  });
+}
+
+export function setTopicConfidence(
+  s: ReflowState,
+  subjectId: string,
+  topicId: string,
+  confidence: number
+): ReflowState {
+  return withConfig(s, {
+    subjects: s.config.subjects.map((subj) =>
+      subj.id === subjectId
+        ? {
+            ...subj,
+            topics: subj.topics?.map((t) =>
+              t.id === topicId ? { ...t, confidence: clamp(confidence, 1, 10) } : t
+            ),
+          }
+        : subj
+    ),
+  });
+}
+
+function topicConfidence(s: ReflowState, subjectId: string, topicId: string): number | undefined {
+  return s.config.subjects
+    .find((x) => x.id === subjectId)
+    ?.topics?.find((t) => t.id === topicId)?.confidence;
+}
+
+/** Log a correction; if tied to a topic, drop that topic's confidence by 1. */
+export function addCorrection(s: ReflowState, correction: Correction): ReflowState {
+  const lowered = correction.topicId
+    ? setTopicConfidence(
+        s,
+        correction.subjectId,
+        correction.topicId,
+        (topicConfidence(s, correction.subjectId, correction.topicId) ?? 5) - 1
+      )
+    : s;
+  return { ...lowered, corrections: [correction, ...lowered.corrections] };
+}
+
+export const toggleCorrectionReviewed = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  corrections: s.corrections.map((c) => (c.id === id ? { ...c, reviewed: !c.reviewed } : c)),
+});
+
+export const removeCorrection = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  corrections: s.corrections.filter((c) => c.id !== id),
 });
 
 // ── Selector ────────────────────────────────────────────────────────────────

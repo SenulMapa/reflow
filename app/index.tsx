@@ -102,11 +102,18 @@ export default function ThisWeek() {
             </Text>
             <Text style={[type.largeTitle, { color: colors.text }]}>This Week</Text>
           </View>
-          <Link href="/setup" asChild>
-            <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
-              <Text style={{ fontSize: 18 }}>⚙︎</Text>
-            </Pressable>
-          </Link>
+          <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            <Link href="/corrections" asChild>
+              <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+                <Text style={{ fontSize: 18 }}>📓</Text>
+              </Pressable>
+            </Link>
+            <Link href="/setup" asChild>
+              <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+                <Text style={{ fontSize: 18 }}>⚙︎</Text>
+              </Pressable>
+            </Link>
+          </View>
         </View>
 
         <Text style={[type.callout, { color: colors.textDim }]}>

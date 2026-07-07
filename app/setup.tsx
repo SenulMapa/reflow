@@ -5,6 +5,7 @@ import { Surface } from "../src/components/Surface";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
+import { effectiveConfidence } from "../src/data/subjects";
 import { fmtHours } from "../src/lib/format";
 
 /** Subjects available to add (beyond whatever is already configured). */
@@ -40,6 +41,7 @@ export default function Setup() {
   const state = useStore((s) => s.state);
   const setWeeklyGoal = useStore((s) => s.setWeeklyGoal);
   const setConfidence = useStore((s) => s.setConfidence);
+  const setTopicConfidence = useStore((s) => s.setTopicConfidence);
   const removeSubject = useStore((s) => s.removeSubject);
   const addSubject = useStore((s) => s.addSubject);
   const reset = useStore((s) => s.reset);
@@ -80,30 +82,39 @@ export default function Setup() {
         <View style={{ gap: spacing.sm }}>
           {state.config.subjects.map((s) => {
             const color = subjectColors[s.name] ?? colors.accent;
+            const eff = effectiveConfidence(s);
+            const hasTopics = !!s.topics && s.topics.length > 0;
             return (
-              <Surface key={s.id} style={styles.subjectRow}>
-                <View style={[styles.dot, { backgroundColor: color }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={[type.headline, { color: colors.text }]}>{s.name}</Text>
-                  <View style={styles.confBar}>
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <View
-                        key={i}
-                        style={[
-                          styles.confSeg,
-                          { backgroundColor: i < s.confidence ? color : colors.separator },
-                        ]}
-                      />
-                    ))}
-                    <Text style={[type.footnote, { color: colors.textDim, marginLeft: spacing.sm }]}>
-                      {s.confidence}/10
+              <Surface key={s.id} style={{ gap: spacing.md }}>
+                <View style={styles.subjectRow}>
+                  <View style={[styles.dot, { backgroundColor: color }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[type.headline, { color: colors.text }]}>{s.name}</Text>
+                    <Text style={[type.footnote, { color: colors.textDim }]}>
+                      {hasTopics ? `avg confidence ${eff.toFixed(1)}/10` : `confidence ${s.confidence}/10`}
                     </Text>
                   </View>
+                  {!hasTopics && (
+                    <Stepper color={color} onDec={() => setConfidence(s.id, s.confidence - 1)} onInc={() => setConfidence(s.id, s.confidence + 1)} />
+                  )}
+                  <Pressable onPress={() => removeSubject(s.id)} hitSlop={8} style={{ marginLeft: spacing.sm }}>
+                    <Text style={[type.headline, { color: colors.textFaint }]}>✕</Text>
+                  </Pressable>
                 </View>
-                <Stepper color={color} onDec={() => setConfidence(s.id, s.confidence - 1)} onInc={() => setConfidence(s.id, s.confidence + 1)} />
-                <Pressable onPress={() => removeSubject(s.id)} hitSlop={8} style={{ marginLeft: spacing.sm }}>
-                  <Text style={[type.headline, { color: colors.textFaint }]}>✕</Text>
-                </Pressable>
+
+                {hasTopics &&
+                  s.topics!.map((t) => (
+                    <View key={t.id} style={styles.topicRow}>
+                      <Text style={[type.callout, { color: colors.text, flex: 1 }]}>{t.name}</Text>
+                      <View style={styles.confBar}>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                          <View key={i} style={[styles.confSeg, { backgroundColor: i < t.confidence ? color : colors.separator }]} />
+                        ))}
+                      </View>
+                      <Text style={[type.footnote, { color: colors.textDim, width: 34, textAlign: "right" }]}>{t.confidence}/10</Text>
+                      <Stepper color={color} onDec={() => setTopicConfidence(s.id, t.id, t.confidence - 1)} onInc={() => setTopicConfidence(s.id, t.id, t.confidence + 1)} />
+                    </View>
+                  ))}
               </Surface>
             );
           })}
@@ -137,6 +148,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  topicRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   dot: { width: 10, height: 10, borderRadius: 5 },
   confBar: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: spacing.sm },
   confSeg: { width: 14, height: 6, borderRadius: 3 },

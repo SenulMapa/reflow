@@ -31,10 +31,12 @@ describe("state model", () => {
     expect(high).toBeGreaterThan(low);
   });
 
-  test("lowering a subject's confidence pulls more hours toward it", () => {
-    const s = initialState(REF);
-    const before = hoursFor(computePlan(s), "math");
-    const after = hoursFor(computePlan(setConfidence(s, "math", 1)), "math");
+  test("lowering a topic-less subject's confidence pulls more hours toward it", () => {
+    // math/physics/psych carry topics (see weakness.test); a bare added subject
+    // has no topics, so its own confidence still drives the allocation.
+    const base = addSubject(initialState(REF), { id: "cs", name: "Computer Science", confidence: 8 });
+    const before = hoursFor(computePlan(base), "cs");
+    const after = hoursFor(computePlan(setConfidence(base, "cs", 1)), "cs");
     expect(after).toBeGreaterThan(before);
   });
 

@@ -1,7 +1,7 @@
 import type { DayTemplate, WeekInput } from "../engine/week";
 import type { SubjectSignals } from "../engine/allocator/types";
 import { IAL_EXAMS_2027 } from "../data/ial-exams-2027";
-import { EXAM_SUBJECT, type StudySubject } from "../data/subjects";
+import { effectiveConfidence, EXAM_SUBJECT, type StudySubject } from "../data/subjects";
 
 const DAY_MS = 86_400_000;
 
@@ -58,7 +58,7 @@ export function buildWeekInput(opts: {
   const subjects: SubjectSignals[] = opts.subjects.map((s) => ({
     subjectId: s.id,
     daysToExam: daysToNearestExam(s.id, opts.refDateISO),
-    avgConfidence: s.confidence,
+    avgConfidence: effectiveConfidence(s),
     performanceScore: null,
   }));
 
