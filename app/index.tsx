@@ -1,6 +1,6 @@
 import { Link } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
 import { useTheme } from "../src/theme/theme";
@@ -8,6 +8,7 @@ import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
 import { computePlan } from "../src/state/model";
 import { useStore } from "../src/state/store";
 import type { Interval } from "../src/engine/types";
+import { parseBlock } from "../src/lib/parseBlock";
 import { dayNum, fmtHours, fmtTime, weekdayShort } from "../src/lib/format";
 
 const colorFor = (id: string, name?: string) =>
@@ -27,7 +28,8 @@ export default function ThisWeek() {
   const addBlock = useStore((s) => s.addBlock);
   const removeBlock = useStore((s) => s.removeBlock);
   const setRefDate = useStore((s) => s.setRefDate);
-  const [banner, setBanner] = useState<{ text: string; undo: () => void } | null>(null);
+  const [banner, setBanner] = useState<{ text: string; undo?: () => void; error?: boolean } | null>(null);
+  const [quickText, setQuickText] = useState("");
 
   const nameById = useMemo(
     () => Object.fromEntries(state.config.subjects.map((s) => [s.id, s.name])),
@@ -41,8 +43,34 @@ export default function ThisWeek() {
     return out;
   }, [state.week.refDateISO]);
 
+  const todayISO = useMemo(() => {
+    const now = new Date();
+    const p = (n: number) => n.toString().padStart(2, "0");
+    const t = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+    return days.includes(t) ? t : days[0]!;
+  }, [days]);
+
   const totalPlanned = minutes(plan.sessions);
   const unplaced = Object.entries(plan.unplacedHours).filter(([, h]) => h > 0.01);
+
+  function quickAdd() {
+    const res = parseBlock(quickText, { weekDates: days, todayISO });
+    if (!res.ok) {
+      setBanner({ text: res.error, error: true });
+      return;
+    }
+    const { date, start, end, reason } = res.block;
+    const idx = (state.week.blocks[date] ?? []).length;
+    addBlock(date, { start, end });
+    setQuickText("");
+    setBanner({
+      text: `Blocked ${weekdayShort(date)} ${fmtTime(start)}–${fmtTime(end)}${reason ? ` · ${reason}` : ""}`,
+      undo: () => {
+        removeBlock(date, idx);
+        setBanner(null);
+      },
+    });
+  }
 
   function blockDay(date: string) {
     const wd = new Date(date + "T00:00:00Z").getUTCDay();
@@ -95,6 +123,23 @@ export default function ThisWeek() {
           </Pressable>
         </View>
 
+        {/* Natural-language quick block */}
+        <Surface style={styles.quickAdd}>
+          <TextInput
+            value={quickText}
+            onChangeText={setQuickText}
+            placeholder="Block time — “dinner tonight 6–8”"
+            placeholderTextColor={colors.textFaint}
+            style={[type.body, styles.input, { color: colors.text }]}
+            onSubmitEditing={quickAdd}
+            returnKeyType="done"
+            autoCapitalize="none"
+          />
+          <Pressable onPress={quickAdd} hitSlop={8}>
+            <Text style={[type.headline, { color: colors.accent }]}>Block</Text>
+          </Pressable>
+        </Surface>
+
         {/* Allocation chips */}
         <View style={styles.chips}>
           {plan.allocations.map((a) => (
@@ -108,10 +153,18 @@ export default function ThisWeek() {
 
         {banner && (
           <Surface style={styles.banner}>
-            <Text style={[type.footnote, { color: colors.text, flex: 1 }]}>{banner.text}</Text>
-            <Pressable onPress={banner.undo} hitSlop={8}>
-              <Text style={[type.headline, { color: colors.accent }]}>Undo</Text>
-            </Pressable>
+            <Text style={[type.footnote, { color: banner.error ? colors.danger : colors.text, flex: 1 }]}>
+              {banner.text}
+            </Text>
+            {banner.undo ? (
+              <Pressable onPress={banner.undo} hitSlop={8}>
+                <Text style={[type.headline, { color: colors.accent }]}>Undo</Text>
+              </Pressable>
+            ) : (
+              <Pressable onPress={() => setBanner(null)} hitSlop={8}>
+                <Text style={[type.headline, { color: colors.accent }]}>OK</Text>
+              </Pressable>
+            )}
           </Surface>
         )}
 
@@ -182,6 +235,8 @@ const styles = StyleSheet.create({
   iconBtn: { width: 40, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   weekNav: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   navBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md, alignItems: "center" },
+  quickAdd: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.md, paddingVertical: spacing.md },
+  input: { flex: 1, padding: 0 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.lg },
   chip: { flexDirection: "row", alignItems: "center", gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
   dot: { width: 8, height: 8, borderRadius: 4 },
