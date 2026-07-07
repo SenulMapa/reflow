@@ -83,6 +83,8 @@ export interface ReflowState {
   pastPapers: PastPaper[];
   focusSessions: FocusSession[];
   sources: Source[];
+  /** Per-session completion, keyed by sessionKeyOf(). */
+  sessionStatus: Record<string, "done" | "skipped">;
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -100,6 +102,7 @@ export function initialState(refDateISO: string): ReflowState {
     pastPapers: [],
     focusSessions: [],
     sources: [],
+    sessionStatus: {},
   };
 }
 
@@ -271,6 +274,38 @@ export const removeSource = (s: ReflowState, id: string): ReflowState => ({
   ...s,
   sources: s.sources.filter((x) => x.id !== id),
 });
+
+// ── Session missions + completion (Fable #1, #2) ────────────────────────────
+
+/** Stable identity for a placed session (date + subject + start minute). */
+export function sessionKeyOf(s: { date: string; subjectId: string; interval: { start: number } }): string {
+  return `${s.date}|${s.subjectId}|${s.interval.start}`;
+}
+
+/** The lowest-confidence topic of a subject — what a session should target. */
+export function weakestTopic(s: ReflowState, subjectId: string): Topic | undefined {
+  const subj = s.config.subjects.find((x) => x.id === subjectId);
+  if (!subj?.topics?.length) return undefined;
+  return [...subj.topics].sort((a, b) => a.confidence - b.confidence)[0];
+}
+
+/** Count of un-reviewed corrections for a subject (optionally a topic). */
+export function unreviewedCorrections(s: ReflowState, subjectId: string, topicId?: string): number {
+  return s.corrections.filter(
+    (c) => c.subjectId === subjectId && (!topicId || c.topicId === topicId) && !c.reviewed
+  ).length;
+}
+
+export function setSessionStatus(
+  s: ReflowState,
+  key: string,
+  status: "done" | "skipped" | null
+): ReflowState {
+  const next = { ...s.sessionStatus };
+  if (status === null) delete next[key];
+  else next[key] = status;
+  return { ...s, sessionStatus: next };
+}
 
 // ── Selector ────────────────────────────────────────────────────────────────
 

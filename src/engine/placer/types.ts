@@ -17,6 +17,8 @@ export interface PlacerInput {
   demands: SubjectDemand[];
   /** Placement granularity in minutes (e.g. 30). */
   slotMinutes: number;
+  /** Max length of a single session before it's split (anti-cramming). Default 120. */
+  maxSessionMinutes?: number;
 }
 
 export interface PlacedSession {

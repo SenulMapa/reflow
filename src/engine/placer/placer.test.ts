@@ -76,6 +76,24 @@ describe("place", () => {
     }
   });
 
+  test("interleaves subjects within a shared window instead of one monopolizing it", () => {
+    const out = place({
+      slotMinutes: 30,
+      maxSessionMinutes: 60, // force multiple sessions each
+      days: [{ date: "d1", free: [{ start: 540, end: 780 }] }], // 4h window
+      demands: [
+        { subjectId: "a", hours: 2 },
+        { subjectId: "b", hours: 2 },
+      ],
+    });
+
+    const order = [...out.sessions]
+      .sort((x, y) => x.interval.start - y.interval.start)
+      .map((s) => s.subjectId);
+    // Round-robin with a 60-min cap → a, b, a, b (not a, a, b, b).
+    expect(order).toEqual(["a", "b", "a", "b"]);
+  });
+
   test("reports the shortfall when the week cannot absorb all the hours", () => {
     const out = place({
       slotMinutes: 30,

@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
-import { computePlan } from "../src/state/model";
+import { computePlan, sessionKeyOf, unreviewedCorrections, weakestTopic } from "../src/state/model";
 import { useStore } from "../src/state/store";
 import type { Interval } from "../src/engine/types";
 import { resolveBlock } from "../src/lib/blockEntry";
@@ -28,6 +28,7 @@ export default function ThisWeek() {
   const addBlock = useStore((s) => s.addBlock);
   const removeBlock = useStore((s) => s.removeBlock);
   const setRefDate = useStore((s) => s.setRefDate);
+  const setSessionStatus = useStore((s) => s.setSessionStatus);
   const [banner, setBanner] = useState<{ text: string; undo?: () => void; error?: boolean } | null>(null);
   const [quickText, setQuickText] = useState("");
 
@@ -51,6 +52,7 @@ export default function ThisWeek() {
   }, [days]);
 
   const totalPlanned = minutes(plan.sessions);
+  const doneCount = plan.sessions.filter((s) => state.sessionStatus[sessionKeyOf(s)] === "done").length;
   const unplaced = Object.entries(plan.unplacedHours).filter(([, h]) => h > 0.01);
 
   async function quickAdd() {
@@ -135,7 +137,8 @@ export default function ThisWeek() {
         </View>
 
         <Text style={[type.callout, { color: colors.textDim }]}>
-          {fmtHours(totalPlanned / 60)} planned toward your {fmtHours(state.config.weeklyGoalHours)} goal
+          {fmtHours(totalPlanned / 60)} planned toward {fmtHours(state.config.weeklyGoalHours)}
+          {plan.sessions.length > 0 ? ` · ${doneCount}/${plan.sessions.length} done` : ""}
         </Text>
 
         {/* Week nav */}
@@ -234,15 +237,43 @@ export default function ThisWeek() {
                   </View>
                 ))}
 
-                {ss.map((s, i) => (
-                  <View key={i} style={[styles.session, { borderTopColor: colors.separator, borderTopWidth: i === 0 && blocks.length === 0 ? 0 : StyleSheet.hairlineWidth }]}>
-                    <View style={[styles.bar, { backgroundColor: colorFor(s.subjectId, nameById[s.subjectId]) }]} />
-                    <Text style={[type.body, { color: colors.text, flex: 1 }]}>{nameById[s.subjectId] ?? s.subjectId}</Text>
-                    <Text style={[type.callout, { color: colors.textDim }]}>
-                      {fmtTime(s.interval.start)} – {fmtTime(s.interval.end)}
-                    </Text>
-                  </View>
-                ))}
+                {ss.map((s, i) => {
+                  const key = sessionKeyOf(s);
+                  const status = state.sessionStatus[key];
+                  const done = status === "done";
+                  const skipped = status === "skipped";
+                  const color = colorFor(s.subjectId, nameById[s.subjectId]);
+                  const wt = weakestTopic(state, s.subjectId);
+                  const toReview = wt ? unreviewedCorrections(state, s.subjectId, wt.id) : 0;
+                  const mission = skipped
+                    ? "Skipped — tap to restore"
+                    : wt
+                      ? `${wt.name} · ${wt.confidence}/10${toReview ? ` · ${toReview} to review` : ""}`
+                      : "Study session";
+                  return (
+                    <Pressable
+                      key={i}
+                      onPress={() => setSessionStatus(key, done ? null : "done")}
+                      onLongPress={() => setSessionStatus(key, skipped ? null : "skipped")}
+                      style={[styles.session, { borderTopColor: colors.separator, borderTopWidth: i === 0 && blocks.length === 0 ? 0 : StyleSheet.hairlineWidth }]}
+                    >
+                      <View style={[styles.check, { borderColor: color, backgroundColor: done ? color : "transparent" }]}>
+                        {done && <Text style={styles.checkMark}>✓</Text>}
+                      </View>
+                      <View style={{ flex: 1, opacity: status ? 0.5 : 1 }}>
+                        <Text style={[type.body, { color: colors.text, textDecorationLine: done ? "line-through" : "none" }]}>
+                          {nameById[s.subjectId] ?? s.subjectId}
+                        </Text>
+                        <Text style={[type.caption, { color: skipped ? colors.warning : colors.textFaint }]} numberOfLines={1}>
+                          {mission}
+                        </Text>
+                      </View>
+                      <Text style={[type.callout, { color: colors.textDim, opacity: status ? 0.5 : 1 }]}>
+                        {fmtTime(s.interval.start)} – {fmtTime(s.interval.end)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </Surface>
             );
           })}
@@ -270,5 +301,7 @@ const styles = StyleSheet.create({
   dayHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
   dayHeaderRight: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   session: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  check: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  checkMark: { color: "#fff", fontSize: 13, fontWeight: "700" },
   bar: { width: 4, height: 22, borderRadius: 2 },
 });

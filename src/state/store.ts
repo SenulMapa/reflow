@@ -36,6 +36,7 @@ interface Store {
   addFocusSession: (f: FocusSession) => void;
   addSource: (s: Source) => void;
   removeSource: (id: string) => void;
+  setSessionStatus: (key: string, status: "done" | "skipped" | null) => void;
   reset: () => void;
 }
 
@@ -68,10 +69,11 @@ export const useStore = create<Store>()(
       addFocusSession: (f) => set(apply((s) => M.addFocusSession(s, f))),
       addSource: (src) => set(apply((s) => M.addSource(s, src))),
       removeSource: (id) => set(apply((s) => M.removeSource(s, id))),
+      setSessionStatus: (key, status) => set(apply((s) => M.setSessionStatus(s, key, status))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v5",
+      name: "reflow-state-v6",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {
