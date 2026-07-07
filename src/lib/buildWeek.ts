@@ -67,19 +67,22 @@ export function buildWeekInput(opts: {
   return { days, subjects, config, weeklyGoalHours: opts.weeklyGoalHours, slotMinutes };
 }
 
-/** A sensible default weekly canvas: weekday evenings + weekend blocks. */
+/** Preset study windows the availability editor toggles (minutes from midnight). */
+export const AVAILABILITY_PRESETS = [
+  { key: "morning", label: "Morning", start: 540, end: 720 }, // 9–12
+  { key: "afternoon", label: "Afternoon", start: 780, end: 1020 }, // 1–5
+  { key: "evening", label: "Evening", start: 1020, end: 1260 }, // 5–9
+] as const;
+
+const PRESET = Object.fromEntries(AVAILABILITY_PRESETS.map((p) => [p.key, { start: p.start, end: p.end }]));
+
+/** A sensible default weekly canvas: weekday evenings + weekend days (~34h). */
 export const DEFAULT_AVAILABILITY: AvailabilityTemplate = {
-  1: [{ start: 1020, end: 1260 }], // Mon 17:00–21:00
-  2: [{ start: 1020, end: 1260 }],
-  3: [{ start: 1020, end: 1260 }],
-  4: [{ start: 1020, end: 1260 }],
-  5: [{ start: 1020, end: 1260 }], // Fri
-  6: [ // Sat
-    { start: 600, end: 780 }, // 10:00–13:00
-    { start: 840, end: 1080 }, // 14:00–18:00
-  ],
-  0: [ // Sun
-    { start: 600, end: 780 },
-    { start: 840, end: 1080 },
-  ],
+  1: [PRESET.evening!],
+  2: [PRESET.evening!],
+  3: [PRESET.evening!],
+  4: [PRESET.evening!],
+  5: [PRESET.evening!],
+  6: [PRESET.morning!, PRESET.afternoon!],
+  0: [PRESET.morning!, PRESET.afternoon!],
 };

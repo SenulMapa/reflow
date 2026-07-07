@@ -75,6 +75,15 @@ export default function Setup() {
           <Stepper color={colors.accent} onDec={() => setWeeklyGoal(goal - 1)} onInc={() => setWeeklyGoal(goal + 1)} />
         </Surface>
 
+        <Link href="/availability" asChild>
+          <Pressable>
+            <Surface style={[styles.row, { marginTop: spacing.sm }]}>
+              <Text style={[type.headline, { color: colors.text, flex: 1 }]}>Availability</Text>
+              <Text style={[type.headline, { color: colors.accent }]}>Edit ›</Text>
+            </Surface>
+          </Pressable>
+        </Link>
+
         {/* Subjects */}
         <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.xl, marginBottom: spacing.sm }]}>
           SUBJECTS · confidence drives the split

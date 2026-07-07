@@ -21,6 +21,7 @@ interface Store {
   setConfidence: (id: string, confidence: number) => void;
   addSubject: (s: StudySubject) => void;
   removeSubject: (id: string) => void;
+  setAvailability: (weekday: number, windows: Interval[]) => void;
   addBlock: (date: string, block: Interval) => void;
   removeBlock: (date: string, index: number) => void;
   clearBlocks: () => void;
@@ -49,6 +50,7 @@ export const useStore = create<Store>()(
       setConfidence: (id, c) => set(apply((s) => M.setConfidence(s, id, c))),
       addSubject: (subj) => set(apply((s) => M.addSubject(s, subj))),
       removeSubject: (id) => set(apply((s) => M.removeSubject(s, id))),
+      setAvailability: (wd, windows) => set(apply((s) => M.setAvailability(s, wd, windows))),
       addBlock: (date, b) => set(apply((s) => M.addBlock(s, date, b))),
       removeBlock: (date, i) => set(apply((s) => M.removeBlock(s, date, i))),
       clearBlocks: () => set(apply((s) => M.clearBlocks(s))),
