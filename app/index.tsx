@@ -1,5 +1,5 @@
-import { Link } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { Link, useRouter } from "expo-router";
+import { useEffect, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
@@ -17,8 +17,6 @@ import { CoachCard } from "../src/components/CoachCard";
 import { Garden } from "../src/components/Garden";
 import { PressableScale } from "../src/components/PressableScale";
 import { FadeInView } from "../src/components/FadeInView";
-import { Skeleton } from "../src/components/Skeleton";
-import { haptics } from "../src/lib/haptics";
 
 const shiftISO = (iso: string, d: number) => {
   const x = new Date(iso + "T00:00:00Z");
@@ -28,6 +26,7 @@ const shiftISO = (iso: string, d: number) => {
 
 export default function Home() {
   const { colors } = useTheme();
+  const router = useRouter();
   const state = useStore((s) => s.state);
   const setDeck = useStore((s) => s.setDeck);
 
@@ -72,20 +71,18 @@ export default function Home() {
     generatedAt: now.toISOString(),
   });
 
-  // AI-TUTOR DECK (SP4): on mount, ask the tutor to arrange today. Fail-safe —
-  // planDeck returns null offline/on error, so we keep the deterministic fallback.
-  const [loading, setLoading] = useState(false);
+  // AI-TUTOR DECK (SP4): the deterministic deck renders INSTANTLY (below); on
+  // mount we ask the tutor to arrange today and quietly swap in its plan when it
+  // arrives. Fail-safe — planDeck returns null offline/on error/timeout, so the
+  // fallback simply stays. The student never waits on the network to see content.
   useEffect(() => {
     if (!isLLMConfigured()) return;
     let cancelled = false;
-    setLoading(true);
     planDeck(studentModel(state))
       .then((raw) => {
-        if (cancelled) return;
-        if (raw != null) setDeck(sanitizeDeck(raw, new Date().toISOString(), fallbackDeck));
+        if (!cancelled && raw != null) setDeck(sanitizeDeck(raw, new Date().toISOString(), fallbackDeck));
       })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .catch(() => {});
     return () => { cancelled = true; };
     // Mount-only: arrange the deck once per Home visit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,18 +101,16 @@ export default function Home() {
     coach_note: <CoachCard body={coachBody} why={coachWhy} />,
     orbits: <OrbitRow subjects={orbitSubjects} leadId={leadId} />,
     do_next: next ? (
-      <Link href="/week" asChild>
-        <PressableScale haptic="light" style={[styles.doNext, { backgroundColor: colors.accent }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={[type.caption, { color: "#fff", opacity: 0.85 }]}>DO NEXT</Text>
-            <Text style={[type.headline, { color: "#fff", marginTop: 3 }]}>{nameById[next.subjectId]}</Text>
-            <Text style={[type.footnote, { color: "#fff", opacity: 0.85 }]}>
-              {fmtTime(next.interval.start)}–{fmtTime(next.interval.end)}
-            </Text>
-          </View>
-          <Text style={{ color: "#fff", fontSize: 22 }}>→</Text>
-        </PressableScale>
-      </Link>
+      <PressableScale haptic="light" onPress={() => router.push("/week")} style={[styles.doNext, { backgroundColor: colors.accent }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={[type.caption, { color: "#fff", opacity: 0.85 }]}>DO NEXT</Text>
+          <Text style={[type.headline, { color: "#fff", marginTop: 3 }]}>{nameById[next.subjectId]}</Text>
+          <Text style={[type.footnote, { color: "#fff", opacity: 0.85 }]}>
+            {fmtTime(next.interval.start)}–{fmtTime(next.interval.end)}
+          </Text>
+        </View>
+        <Text style={{ color: "#fff", fontSize: 22 }}>→</Text>
+      </PressableScale>
     ) : undefined,
     momentum_ridge: (
       <Ridge
@@ -128,22 +123,17 @@ export default function Home() {
     ),
     garden_peek: <Garden plants={[]} caption="grows as you focus" />,
     reflect_cta: (
-      <Link href="/week" asChild>
-        <PressableScale style={[styles.reflect, { borderColor: colors.separator }]}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ color: colors.accent, fontSize: 17 }}>🎙</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Reflect on a session</Text>
-            <Text style={[type.footnote, { color: colors.textDim }]}>Just talk — I'll sort out what you covered.</Text>
-          </View>
-        </PressableScale>
-      </Link>
+      <PressableScale onPress={() => router.push("/week")} style={[styles.reflect, { borderColor: colors.separator }]}>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: colors.accent, fontSize: 17 }}>🎙</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Reflect on a session</Text>
+          <Text style={[type.footnote, { color: colors.textDim }]}>Just talk — I'll sort out what you covered.</Text>
+        </View>
+      </PressableScale>
     ),
   };
-
-  // Only show the arranging state when we have nothing cached to render yet.
-  const arranging = loading && !state.deck;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
@@ -169,31 +159,20 @@ export default function Home() {
         </Text>
         <Text style={[type.hero, { color: colors.text, marginTop: spacing.xs, marginBottom: spacing.lg }]}>{greeting}</Text>
 
-        {arranging ? (
-          <View style={{ gap: spacing.md }}>
-            <Text style={[type.footnote, { color: colors.textDim }]}>Your tutor is arranging today…</Text>
-            <Skeleton height={92} radius={radius.lg} />
-            <Skeleton height={132} radius={radius.lg} />
-            <Skeleton height={72} radius={radius.lg} />
-          </View>
-        ) : (
-          <FadeInView>
-            <CardDeck plan={deck} slots={slots} />
-          </FadeInView>
-        )}
+        <FadeInView>
+          <CardDeck plan={deck} slots={slots} />
+        </FadeInView>
 
-        <Link href="/tutor" asChild>
-          <PressableScale style={[styles.tutor, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
-            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ color: colors.accent, fontSize: 16 }}>💬</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Tutor</Text>
-              <Text style={[type.footnote, { color: colors.textDim }]}>Ask a question or think out loud.</Text>
-            </View>
-            <Text style={{ color: colors.textFaint, fontSize: 20 }}>→</Text>
-          </PressableScale>
-        </Link>
+        <PressableScale onPress={() => router.push("/tutor")} style={[styles.tutor, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: colors.accent, fontSize: 16 }}>💬</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Tutor</Text>
+            <Text style={[type.footnote, { color: colors.textDim }]}>Ask a question or think out loud.</Text>
+          </View>
+          <Text style={{ color: colors.textFaint, fontSize: 20 }}>→</Text>
+        </PressableScale>
 
         <Link href="/setup" asChild>
           <Pressable><Text style={[type.footnote, { color: colors.textFaint, textAlign: "center", marginTop: spacing.xl }]}>Practice · Corrections · Library · Settings →</Text></Pressable>

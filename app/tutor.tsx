@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import {
   FlatList,
@@ -84,6 +84,7 @@ const toChatMsg = (m: ChatMessage): ChatMsg => ({ role: m.role, content: m.conte
 
 export default function Tutor() {
   const { colors } = useTheme();
+  const router = useRouter();
   const chat = useStore((s) => s.state.chat);
   const stateRef = useStore((s) => s.state);
   const appendChat = useStore((s) => s.appendChat);
@@ -181,11 +182,9 @@ export default function Tutor() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.separator }]}>
-        <Link href="/" asChild>
-          <Pressable hitSlop={8} style={styles.back}>
-            <Text style={[type.callout, { color: colors.accent }]}>‹ Home</Text>
-          </Pressable>
-        </Link>
+        <Pressable hitSlop={8} style={styles.back} onPress={() => router.push("/")}>
+          <Text style={[type.callout, { color: colors.accent }]}>‹ Home</Text>
+        </Pressable>
         <View style={styles.headerCenter}>
           <AuroraOrb size={24} />
           <Text style={[type.headline, { color: colors.text }]}>Tutor</Text>

@@ -22,18 +22,31 @@ export function isLLMConfigured(): boolean {
   return typeof LLM_URL === "string" && LLM_URL.length > 0;
 }
 
-export async function generate<T = unknown>(task: LLMTask, input: unknown): Promise<T> {
+export async function generate<T = unknown>(
+  task: LLMTask,
+  input: unknown,
+  opts?: { timeoutMs?: number }
+): Promise<T> {
   if (!LLM_URL) throw new Error("LLM not configured");
-  const res = await fetch(LLM_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(LLM_TOKEN ? { authorization: `Bearer ${LLM_TOKEN}` } : {}),
-    },
-    body: JSON.stringify({ task, input }),
-  });
-  if (!res.ok) throw new Error(`LLM request failed: ${res.status}`);
-  return (await res.json()) as T;
+  // Hard timeout: a hung/slow connection must never trap the caller — it aborts
+  // and rejects, so fail-safe callers (planDeck/chatReply) fall back cleanly.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), opts?.timeoutMs ?? 20000);
+  try {
+    const res = await fetch(LLM_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(LLM_TOKEN ? { authorization: `Bearer ${LLM_TOKEN}` } : {}),
+      },
+      body: JSON.stringify({ task, input }),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error(`LLM request failed: ${res.status}`);
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -44,7 +57,7 @@ export async function generate<T = unknown>(task: LLMTask, input: unknown): Prom
 export async function planDeck(studentModel: unknown): Promise<unknown | null> {
   if (!isLLMConfigured()) return null;
   try {
-    return await generate("plan_deck", { studentModel });
+    return await generate("plan_deck", { studentModel }, { timeoutMs: 8000 });
   } catch {
     return null;
   }
@@ -60,7 +73,7 @@ export async function chatReply(
 ): Promise<string | null> {
   if (!isLLMConfigured()) return null;
   try {
-    const res = await generate<{ reply?: string }>("chat", { messages, studentModel });
+    const res = await generate<{ reply?: string }>("chat", { messages, studentModel }, { timeoutMs: 30000 });
     return typeof res?.reply === "string" ? res.reply : null;
   } catch {
     return null;
