@@ -4,6 +4,18 @@ A personal study scheduler whose brain **derives** how many hours each subject g
 
 Expo SDK 54 (React Native) · offline-first · MiniMax-powered (swappable) · self-hosted Supabase.
 
+## Screens (verified rendering, headless browser)
+
+| This Week (with reflow) | Insights | Correction Booklet |
+|---|---|---|
+| ![](docs/screenshots/this-week.png) | ![](docs/screenshots/insights.png) | ![](docs/screenshots/correction-booklet.png) |
+
+| Setup | Focus Timer |
+|---|---|
+| ![](docs/screenshots/setup.png) | ![](docs/screenshots/timer.png) |
+
+The This Week shot shows the core feature live: typing *"monday 5-7 gym"* blocked that slot and the week reflowed around it (Undo offered), keeping the weekly budget.
+
 ## Run
 
 ```bash
