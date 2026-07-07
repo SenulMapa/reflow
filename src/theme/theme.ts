@@ -8,6 +8,7 @@ export interface Theme {
 
 /** Resolve the active palette from the OS color scheme. */
 export function useTheme(): Theme {
-  const scheme = useColorScheme() ?? "light";
-  return { colors: palette[scheme === "dark" ? "dark" : "light"], scheme };
+  // RN 0.85 widened useColorScheme() to include "unspecified" — coerce to our two.
+  const scheme: "light" | "dark" = useColorScheme() === "dark" ? "dark" : "light";
+  return { colors: palette[scheme], scheme };
 }
