@@ -8,7 +8,7 @@ import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
 import { computePlan } from "../src/state/model";
 import { useStore } from "../src/state/store";
 import type { Interval } from "../src/engine/types";
-import { parseBlock } from "../src/lib/parseBlock";
+import { resolveBlock } from "../src/lib/blockEntry";
 import { dayNum, fmtHours, fmtTime, weekdayShort } from "../src/lib/format";
 
 const colorFor = (id: string, name?: string) =>
@@ -53,8 +53,8 @@ export default function ThisWeek() {
   const totalPlanned = minutes(plan.sessions);
   const unplaced = Object.entries(plan.unplacedHours).filter(([, h]) => h > 0.01);
 
-  function quickAdd() {
-    const res = parseBlock(quickText, { weekDates: days, todayISO });
+  async function quickAdd() {
+    const res = await resolveBlock(quickText, { weekDates: days, todayISO });
     if (!res.ok) {
       setBanner({ text: res.error, error: true });
       return;
