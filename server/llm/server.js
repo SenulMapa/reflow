@@ -9,11 +9,13 @@ const API_KEY = process.env.MINIMAX_API_KEY || "";
 const BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimax.io/v1";
 const MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2";
 const PORT = parseInt(process.env.PORT || "8787", 10);
-// Shared secret the app must present (Bearer). Unset ⇒ auth disabled (dev).
+// Shared secret the app must present (Bearer). This endpoint spends the MiniMax
+// key, so auth FAILS CLOSED: if REFLOW_LLM_TOKEN is unset (misconfig / unmounted
+// env), every POST is rejected rather than silently served. Set it to enable.
 const AUTH_TOKEN = process.env.REFLOW_LLM_TOKEN || "";
 
+/** Constant-time check. Caller must have already ensured AUTH_TOKEN is set. */
 function authorized(req) {
-  if (!AUTH_TOKEN) return true;
   const hdr = req.headers["authorization"] || "";
   const provided = hdr.startsWith("Bearer ") ? hdr.slice(7) : "";
   const a = Buffer.from(provided);
@@ -98,6 +100,7 @@ http
     if (req.method === "OPTIONS") return send(res, 204, {});
     if (req.method === "GET") return send(res, 200, { ok: true, model: MODEL, auth: !!AUTH_TOKEN });
     if (req.method !== "POST") return send(res, 405, { error: "method not allowed" });
+    if (!AUTH_TOKEN) return send(res, 503, { error: "server auth not configured" });
     if (!authorized(req)) return send(res, 401, { error: "unauthorized" });
     let raw = "";
     req.on("data", (c) => (raw += c));

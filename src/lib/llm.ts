@@ -8,6 +8,10 @@
  */
 
 const LLM_URL = process.env.EXPO_PUBLIC_LLM_URL;
+// NOTE: EXPO_PUBLIC_* is embedded in the client bundle, so this token is
+// EXTRACTABLE — it's a rotatable, low-privilege deterrent for the proxy, NOT a
+// secret. The actual MiniMax key stays server-side and is never shipped. Real
+// per-user protection comes with the multi-user phase (Supabase Auth).
 const LLM_TOKEN = process.env.EXPO_PUBLIC_LLM_TOKEN;
 
 export type LLMTask = "parse_block" | "quiz" | "grade_feynman";
