@@ -1,0 +1,138 @@
+name: Build iOS IPA
+
+# Native builds ONLY. Path-filtered so pure-JS changes never burn a build —
+# those ship via `eas update` (OTA). Mirrors the Tani pipeline, single-repo:
+# the IPA release + AltStore/SideStore source.json live in THIS public repo.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'android/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'app.json'
+      - 'eas.json'
+      - 'babel.config.*'
+      - 'metro.config.*'
+      - 'plugins/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prebuild (generate ios project)
+        run: npx expo prebuild --platform ios --no-install --clean 2>&1
+
+      - name: Install CocoaPods (build from source for Xcode 26.2)
+        run: |
+          cd ios
+          EXPO_USE_PREBUILT_XCFRAMEWORKS=0 pod install --repo-update
+
+      - name: Build unsigned .app
+        run: |
+          cd ios
+          xcodebuild \
+            -workspace Reflow.xcworkspace \
+            -scheme Reflow \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED="NO" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED="NO" \
+            clean build
+
+      - name: Package as IPA
+        run: |
+          mkdir -p Payload
+          cp -r ios/build/Build/Products/Release-iphoneos/Reflow.app Payload/
+          zip -r Reflow.ipa Payload/
+
+      - name: Get version and tag
+        id: meta
+        run: |
+          VERSION=$(jq -r '.expo.version' app.json)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}-$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
+          echo "bytes=$(wc -c < Reflow.ipa | tr -d ' ')" >> $GITHUB_OUTPUT
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release (this repo)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" Reflow.ipa \
+            --repo ${{ github.repository }} \
+            --title "Reflow ${{ steps.meta.outputs.version }}" \
+            --notes "Automated build from commit ${{ github.sha }}" \
+            --latest
+
+      - name: Update source.json (SideStore/AltStore) in this repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          TAG="${{ steps.meta.outputs.tag }}"
+          BYTES="${{ steps.meta.outputs.bytes }}"
+          DATE="${{ steps.meta.outputs.date }}"
+          REPO="${{ github.repository }}"
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/Reflow.ipa"
+          ICON_URL="https://raw.githubusercontent.com/${REPO}/main/assets/icon.png"
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg date "$DATE" \
+            --arg url "$DOWNLOAD_URL" \
+            --arg icon "$ICON_URL" \
+            --argjson size "$BYTES" \
+            '{
+              name: "Reflow",
+              identifier: "com.senul.reflow.source",
+              subtitle: "Ace your A-Levels — your study brain + AI tutor.",
+              apps: [{
+                name: "Reflow",
+                bundleIdentifier: "com.senul.reflow",
+                developerName: "Senul Mapa",
+                subtitle: "Your A-Level study brain, with an AI tutor.",
+                localizedDescription: "Reflow derives your weekly study hours from live signals and reflows them around your life, with an AI tutor that arranges your day, a focus garden, and a coin economy for guilt-free rewards.",
+                iconURL: $icon,
+                tintColor: "D9541E",
+                category: "education",
+                version: $version,
+                versionDate: $date,
+                versionDescription: ("Build from " + $date),
+                downloadURL: $url,
+                size: $size,
+                minOSVersion: "16.0",
+                versions: [{
+                  version: $version,
+                  date: $date,
+                  localizedDescription: ("Build from " + $date),
+                  downloadURL: $url,
+                  size: $size,
+                  minOSVersion: "16.0"
+                }]
+              }]
+            }' > source.json
+
+          git config user.email "ci@reflow.app"
+          git config user.name "Reflow CI"
+          git add source.json
+          git commit -m "release: Reflow ${VERSION} (${DATE}) [skip ci]" || echo "no source.json change"
+          git push origin HEAD:main

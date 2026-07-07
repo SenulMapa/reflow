@@ -46,29 +46,39 @@ export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 40
 export const radius = { sm: 10, md: 14, lg: 22, xl: 28, pill: 999 } as const;
 
 /**
- * Type scale on system SF. `fontFamily` is explicitly `undefined` (system font)
- * so `fontWeight` is honoured AND existing `type.x.fontFamily` reads still
- * typecheck. Heavy tight weights for display; tracked uppercase for captions.
+ * Editorial identity: **PP Editorial New** across the whole app. Only two weights
+ * ship (Ultralight + Ultrabold + italics), so we pair them deliberately — Ultrabold
+ * carries display, labels, and data (legible + striking at any size); Ultralight
+ * carries reading text (elegant high-contrast serif); italics for accents. Loaded
+ * in `app/_layout.tsx` via `useFonts`. NOTE: with a specific-weight fontFamily, RN
+ * ignores `fontWeight`, so weight lives in the family name.
  */
+export const fonts = {
+  display: "PPEditorialUltrabold",
+  displayItalic: "PPEditorialUltraboldItalic",
+  light: "PPEditorialUltralight",
+  lightItalic: "PPEditorialUltralightItalic",
+} as const;
+
 const t = (
+  fontFamily: string,
   fontSize: number,
   lineHeight: number,
-  fontWeight: TextStyle["fontWeight"],
   extra: Partial<TextStyle> = {},
-): TextStyle => ({ fontFamily: undefined, fontSize, lineHeight, fontWeight, ...extra });
+): TextStyle => ({ fontFamily, fontSize, lineHeight, ...extra });
 
 export const type = {
-  hero:       t(34, 38, "800", { letterSpacing: -0.6 }),
-  heroItalic: t(30, 34, "800", { letterSpacing: -0.4, fontStyle: "italic" }),
-  largeTitle: t(28, 32, "800", { letterSpacing: -0.4 }),
-  title:      t(22, 26, "700", { letterSpacing: -0.2 }),
-  serif:      t(20, 27, "600"), // "serif" key retained; now a calm strong title
-  headline:   t(16, 20, "700"),
-  body:       t(15, 22, "400"),
-  callout:    t(14, 20, "500"),
-  footnote:   t(13, 18, "500"),
-  caption:    t(11, 14, "700", { letterSpacing: 1.4, textTransform: "uppercase" }),
-  data:       t(16, 20, "700", { fontVariant: ["tabular-nums"] }),
+  hero:       t(fonts.display, 40, 44, { letterSpacing: -0.5 }),
+  heroItalic: t(fonts.displayItalic, 36, 40, { letterSpacing: -0.4 }),
+  largeTitle: t(fonts.display, 32, 36, { letterSpacing: -0.4 }),
+  title:      t(fonts.display, 25, 30, { letterSpacing: -0.2 }),
+  serif:      t(fonts.light, 22, 30), // calm light-serif subtitle / empty-state voice
+  headline:   t(fonts.display, 17, 22),
+  body:       t(fonts.light, 16, 24),
+  callout:    t(fonts.light, 15, 21),
+  footnote:   t(fonts.light, 13.5, 19),
+  caption:    t(fonts.display, 11, 14, { letterSpacing: 1.2, textTransform: "uppercase" }),
+  data:       t(fonts.display, 17, 21, { fontVariant: ["tabular-nums"] }),
 } as const;
 
 /** Subject accent colours — carry both themes. */
