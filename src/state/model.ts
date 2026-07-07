@@ -49,11 +49,20 @@ export interface PastPaper {
   date: string;
 }
 
+/** A completed focus/pomodoro session — owned metrics that feed insights. */
+export interface FocusSession {
+  id: string;
+  subjectId?: string;
+  date: string;
+  minutes: number;
+}
+
 export interface ReflowState {
   config: ReflowConfig;
   week: WeekState;
   corrections: Correction[];
   pastPapers: PastPaper[];
+  focusSessions: FocusSession[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -69,6 +78,7 @@ export function initialState(refDateISO: string): ReflowState {
     week: { refDateISO, blocks: {} },
     corrections: [],
     pastPapers: [],
+    focusSessions: [],
   };
 }
 
@@ -217,6 +227,17 @@ export function performanceMap(s: ReflowState): Record<string, number | null> {
   return Object.fromEntries(
     s.config.subjects.map((subj) => [subj.id, subjectPerformance(s, subj.id)])
   );
+}
+
+// ── Focus sessions (Phase 4) ────────────────────────────────────────────────
+
+export function addFocusSession(s: ReflowState, session: FocusSession): ReflowState {
+  return { ...s, focusSessions: [session, ...s.focusSessions] };
+}
+
+/** Total focused minutes logged for a given ISO date. */
+export function focusMinutesOn(s: ReflowState, date: string): number {
+  return s.focusSessions.filter((f) => f.date === date).reduce((t, f) => t + f.minutes, 0);
 }
 
 // ── Selector ────────────────────────────────────────────────────────────────
