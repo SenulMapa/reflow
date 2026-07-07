@@ -7,7 +7,7 @@ const crypto = require("crypto");
 
 const API_KEY = process.env.MINIMAX_API_KEY || "";
 const BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimax.io/v1";
-const MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2";
+const MODEL = process.env.MINIMAX_MODEL || "MiniMax-M3";
 const PORT = parseInt(process.env.PORT || "8787", 10);
 // Shared secret the app must present (Bearer). This endpoint spends the MiniMax
 // key, so auth FAILS CLOSED: if REFLOW_LLM_TOKEN is unset (misconfig / unmounted

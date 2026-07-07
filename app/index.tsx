@@ -1,18 +1,25 @@
 import { Link } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
-import { computePlan, sessionKeyOf } from "../src/state/model";
-import { levelProgress } from "../src/state/rewards";
+import { spacing, type, radius, subjectColors } from "../src/theme/tokens";
+import { computePlan, sessionKeyOf, focusMinutesOn, studentModel } from "../src/state/model";
 import { useStore } from "../src/state/store";
 import { daysToNearestExam } from "../src/lib/buildWeek";
-import { daysAway } from "../src/lib/words";
-import { fmtHours, fmtTime, weekdayShort } from "../src/lib/format";
+import { fmtHours, weekdayShort, fmtTime } from "../src/lib/format";
+import { isLLMConfigured, planDeck } from "../src/lib/llm";
+import { buildFallbackDeck, sanitizeDeck } from "../src/ui/deck";
+import { CardDeck } from "../src/components/CardDeck";
+import { OrbitRow } from "../src/components/OrbitRow";
+import { Ridge } from "../src/components/Ridge";
+import { CoachCard } from "../src/components/CoachCard";
+import { Garden } from "../src/components/Garden";
+import { PressableScale } from "../src/components/PressableScale";
+import { FadeInView } from "../src/components/FadeInView";
+import { Skeleton } from "../src/components/Skeleton";
+import { haptics } from "../src/lib/haptics";
 
-const WD_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const shiftISO = (iso: string, d: number) => {
   const x = new Date(iso + "T00:00:00Z");
   x.setUTCDate(x.getUTCDate() + d);
@@ -22,8 +29,7 @@ const shiftISO = (iso: string, d: number) => {
 export default function Home() {
   const { colors } = useTheme();
   const state = useStore((s) => s.state);
-  const markSessionDone = useStore((s) => s.markSessionDone);
-  const [flash, setFlash] = useState<string | null>(null);
+  const setDeck = useStore((s) => s.setDeck);
 
   const now = new Date();
   const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -34,46 +40,116 @@ export default function Home() {
   const nameById = useMemo(() => Object.fromEntries(subjects.map((s) => [s.id, s.name])), [subjects]);
   const plan = useMemo(() => computePlan(state), [state]);
 
-  const nearest = useMemo(() => {
-    const list = subjects
-      .map((s) => ({ id: s.id, name: s.name, days: daysToNearestExam(s.id, todayISO) }))
-      .filter((e): e is { id: string; name: string; days: number } => e.days != null)
-      .sort((a, b) => a.days - b.days);
-    return list[0];
-  }, [subjects, todayISO]);
+  const orbitSubjects = useMemo(() =>
+    subjects
+      .map((s) => ({
+        id: s.id, name: s.name,
+        color: subjectColors[s.name] ?? colors.accent,
+        daysToExam: daysToNearestExam(s.id, todayISO),
+        coverage: undefined as number | undefined, // real coverage arrives in SP3
+      }))
+      .sort((a, b) => (a.daysToExam ?? 1e9) - (b.daysToExam ?? 1e9)),
+    [subjects, todayISO, colors.accent]);
+  const leadId = orbitSubjects[0]?.id;
 
   const weekDates = useMemo(
     () => Array.from({ length: 7 }, (_, i) => shiftISO(state.week.refDateISO, i)),
-    [state.week.refDateISO]
-  );
-  const perDay = weekDates.map((d) =>
-    plan.sessions.filter((s) => s.date === d).reduce((t, s) => t + (s.interval.end - s.interval.start), 0)
-  );
+    [state.week.refDateISO]);
+  // Momentum ridge is honest: real focus minutes logged per day, never planned totals.
+  const perDay = weekDates.map((d) => focusMinutesOn(state, d));
   const totalMin = perDay.reduce((a, b) => a + b, 0);
-  const goalMin = state.config.weeklyGoalHours * 60;
-  const maxDay = Math.max(60, ...perDay);
-  const doneCount = plan.sessions.filter((s) => state.sessionStatus[sessionKeyOf(s)] === "done").length;
+  const todayIndex = Math.max(0, weekDates.indexOf(todayISO));
 
-  const lp = levelProgress(state.progress.xp);
   const today = plan.sessions
     .filter((s) => s.date === todayISO)
     .sort((a, b) => a.interval.start - b.interval.start);
+  const next = today.find((s) => state.sessionStatus[sessionKeyOf(s)] !== "done");
 
-  function complete(k: string) {
-    if (state.sessionStatus[k] === "done") return;
-    markSessionDone(k, todayISO);
-    setFlash("+20 coins earned");
-    setTimeout(() => setFlash(null), 1800);
-  }
+  // Deterministic fallback deck, bound to live state. Never empty, never throws.
+  const fallbackDeck = buildFallbackDeck({
+    hasToday: today.length > 0,
+    hasSubjects: subjects.length > 0,
+    generatedAt: now.toISOString(),
+  });
 
-  const colorFor = (id: string) => subjectColors[nameById[id] ?? ""] ?? colors.accent;
+  // AI-TUTOR DECK (SP4): on mount, ask the tutor to arrange today. Fail-safe —
+  // planDeck returns null offline/on error, so we keep the deterministic fallback.
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!isLLMConfigured()) return;
+    let cancelled = false;
+    setLoading(true);
+    planDeck(studentModel(state))
+      .then((raw) => {
+        if (cancelled) return;
+        if (raw != null) setDeck(sanitizeDeck(raw, new Date().toISOString(), fallbackDeck));
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+    // Mount-only: arrange the deck once per Home visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // The deck actually rendered is the tutor's cached plan, else the fallback.
+  const deck = state.deck ?? fallbackDeck;
+
+  const deterministicCoach = next
+    ? `Next up is ${nameById[next.subjectId]}. Small steps — start the session and I'll track the rest.`
+    : `Nothing scheduled right now. When you finish a session, tell me how it went and I'll adjust.`;
+  const coachBody = deck.coachNote?.body ?? deterministicCoach;
+  const coachWhy = deck.coachNote?.why;
+
+  const slots = {
+    coach_note: <CoachCard body={coachBody} why={coachWhy} />,
+    orbits: <OrbitRow subjects={orbitSubjects} leadId={leadId} />,
+    do_next: next ? (
+      <Link href="/week" asChild>
+        <PressableScale haptic="light" style={[styles.doNext, { backgroundColor: colors.accent }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.caption, { color: "#fff", opacity: 0.85 }]}>DO NEXT</Text>
+            <Text style={[type.headline, { color: "#fff", marginTop: 3 }]}>{nameById[next.subjectId]}</Text>
+            <Text style={[type.footnote, { color: "#fff", opacity: 0.85 }]}>
+              {fmtTime(next.interval.start)}–{fmtTime(next.interval.end)}
+            </Text>
+          </View>
+          <Text style={{ color: "#fff", fontSize: 22 }}>→</Text>
+        </PressableScale>
+      </Link>
+    ) : undefined,
+    momentum_ridge: (
+      <Ridge
+        values={perDay}
+        labels={weekDates.map((d) => weekdayShort(d)[0]!)}
+        todayIndex={todayIndex}
+        totalLabel={`${fmtHours(totalMin / 60)} focused`}
+        subLabel="this week"
+      />
+    ),
+    garden_peek: <Garden plants={[]} caption="grows as you focus" />,
+    reflect_cta: (
+      <Link href="/week" asChild>
+        <PressableScale style={[styles.reflect, { borderColor: colors.separator }]}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: colors.accent, fontSize: 17 }}>🎙</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Reflect on a session</Text>
+            <Text style={[type.footnote, { color: colors.textDim }]}>Just talk — I'll sort out what you covered.</Text>
+          </View>
+        </PressableScale>
+      </Link>
+    ),
+  };
+
+  // Only show the arranging state when we have nothing cached to render yet.
+  const arranging = loading && !state.deck;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Top strip: wordmark + streak + coins */}
         <View style={styles.strip}>
-          <Text style={[type.serif, { color: colors.text, fontSize: 20 }]}>Reflow</Text>
+          <Text style={[type.headline, { color: colors.text }]}>Reflow</Text>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
             <View style={[styles.pill, { backgroundColor: colors.goldSoft }]}>
               <Text style={[type.footnote, { color: colors.gold }]}>🔥 {state.progress.streakDays}</Text>
@@ -81,121 +157,49 @@ export default function Home() {
             <Link href="/rewards" asChild>
               <Pressable>
                 <View style={[styles.pill, { backgroundColor: colors.goldSoft }]}>
-                  <Text style={[type.footnote, { color: colors.gold, fontFamily: type.data.fontFamily }]}>🪙 {state.progress.coins}</Text>
+                  <Text style={[type.footnote, { color: colors.gold, fontVariant: ["tabular-nums"] }]}>🪙 {state.progress.coins}</Text>
                 </View>
               </Pressable>
             </Link>
           </View>
         </View>
 
-        {/* Greeting */}
         <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.lg }]}>
-          {WD_LONG[now.getDay()]!.toUpperCase()} · {now.getDate()} {MO[now.getMonth()]!.toUpperCase()}
+          {weekdayShort(todayISO)} · {now.getDate()}
         </Text>
-        <Text style={[type.hero, { color: colors.text, marginTop: spacing.xs }]}>{greeting}</Text>
+        <Text style={[type.hero, { color: colors.text, marginTop: spacing.xs, marginBottom: spacing.lg }]}>{greeting}</Text>
 
-        {/* Countdown hero — the signature */}
-        {nearest && (
-          <View style={styles.countdown}>
-            <View style={[styles.rule, { backgroundColor: colors.separator }]} />
-            <Text style={[type.title, { color: colorFor(nearest.id), marginTop: spacing.md }]}>{nearest.name}</Text>
-            <Text style={[type.heroItalic, { color: colors.text }]}>{daysAway(nearest.days)}</Text>
-            <View style={[styles.rule, { backgroundColor: colors.separator, marginTop: spacing.md }]} />
+        {arranging ? (
+          <View style={{ gap: spacing.md }}>
+            <Text style={[type.footnote, { color: colors.textDim }]}>Your tutor is arranging today…</Text>
+            <Skeleton height={92} radius={radius.lg} />
+            <Skeleton height={132} radius={radius.lg} />
+            <Skeleton height={72} radius={radius.lg} />
           </View>
+        ) : (
+          <FadeInView>
+            <CardDeck plan={deck} slots={slots} />
+          </FadeInView>
         )}
 
-        {/* Momentum */}
-        <View style={styles.block}>
-          <View style={styles.rowBetween}>
-            <Text style={[type.caption, { color: colors.textDim }]}>THIS WEEK</Text>
-            <Text style={[type.caption, { color: colors.textFaint }]}>{doneCount} done</Text>
-          </View>
-          <View style={[styles.rowBetween, { alignItems: "flex-end", marginTop: spacing.xs }]}>
-            <Text style={[type.title, { color: colors.text }]}>
-              {fmtHours(totalMin / 60)} <Text style={[type.body, { color: colors.textFaint }]}>of {fmtHours(goalMin / 60)}</Text>
-            </Text>
-            <View style={styles.spark}>
-              {perDay.map((m, i) => (
-                <View key={i} style={styles.sparkCol}>
-                  <View style={[styles.sparkBar, { height: 6 + (m / maxDay) * 34, backgroundColor: weekDates[i] === todayISO ? colors.gold : colors.accent, opacity: m > 0 ? 1 : 0.18 }]} />
-                  <Text style={[styles.sparkLbl, { color: colors.textFaint }]}>{weekdayShort(weekDates[i]!)[0]}</Text>
-                </View>
-              ))}
+        <Link href="/tutor" asChild>
+          <PressableScale style={[styles.tutor, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: colors.accent, fontSize: 16 }}>💬</Text>
             </View>
-          </View>
-          {/* Level */}
-          <View style={[styles.rowBetween, { marginTop: spacing.lg }]}>
-            <Text style={[type.footnote, { color: colors.textDim }]}>Level {lp.level}</Text>
-            <Text style={[type.footnote, { color: colors.textFaint }]}>{lp.into}/{lp.span} XP</Text>
-          </View>
-          <View style={[styles.track, { backgroundColor: colors.separator }]}>
-            <View style={[styles.fill, { width: `${Math.min(100, lp.frac * 100)}%`, backgroundColor: colors.gold }]} />
-          </View>
-        </View>
-
-        {/* Tonight */}
-        <View style={styles.block}>
-          <Text style={[type.caption, { color: colors.textDim, marginBottom: spacing.sm }]}>
-            {hour < 18 ? "TODAY" : "TONIGHT"}
-          </Text>
-          {today.length === 0 ? (
-            <Text style={[type.serif, { color: colors.textDim }]}>Nothing scheduled — rest well.</Text>
-          ) : (
-            today.map((s, i) => {
-              const k = sessionKeyOf(s);
-              const done = state.sessionStatus[k] === "done";
-              return (
-                <Pressable key={i} onPress={() => complete(k)} style={styles.agenda}>
-                  <View style={[styles.dot, { borderColor: colorFor(s.subjectId), backgroundColor: done ? colorFor(s.subjectId) : "transparent" }]}>
-                    {done && <Text style={styles.tick}>✓</Text>}
-                  </View>
-                  <Text style={[type.body, { color: colors.text, flex: 1, textDecorationLine: done ? "line-through" : "none", opacity: done ? 0.5 : 1 }]}>
-                    {nameById[s.subjectId]}
-                  </Text>
-                  <Text style={[type.callout, { color: colors.textDim, fontFamily: type.data.fontFamily }]}>
-                    {fmtTime(s.interval.start)}–{fmtTime(s.interval.end)}
-                  </Text>
-                </Pressable>
-              );
-            })
-          )}
-          <Link href="/week" asChild>
-            <Pressable style={{ marginTop: spacing.sm }}>
-              <Text style={[type.footnote, { color: colors.accent }]}>See the full week →</Text>
-            </Pressable>
-          </Link>
-        </View>
-
-        {/* Shelf */}
-        <View style={styles.shelf}>
-          {[
-            { href: "/practice", icon: "✎", label: "Practice" },
-            { href: "/rewards", icon: "🪙", label: "Rewards" },
-            { href: "/metrics", icon: "▦", label: "Insights" },
-            { href: "/timer", icon: "◷", label: "Focus" },
-          ].map((t) => (
-            <Link key={t.href} href={t.href as any} asChild>
-              <Pressable style={{ flex: 1 }}>
-                <View style={[styles.tile, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
-                  <Text style={{ fontSize: 20 }}>{t.icon}</Text>
-                  <Text style={[type.caption, { color: colors.textDim, marginTop: 4 }]}>{t.label.toUpperCase()}</Text>
-                </View>
-              </Pressable>
-            </Link>
-          ))}
-        </View>
-        <Link href="/setup" asChild>
-          <Pressable><Text style={[type.footnote, { color: colors.textFaint, textAlign: "center", marginTop: spacing.lg }]}>Corrections · Library · Settings →</Text></Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Tutor</Text>
+              <Text style={[type.footnote, { color: colors.textDim }]}>Ask a question or think out loud.</Text>
+            </View>
+            <Text style={{ color: colors.textFaint, fontSize: 20 }}>→</Text>
+          </PressableScale>
         </Link>
 
+        <Link href="/setup" asChild>
+          <Pressable><Text style={[type.footnote, { color: colors.textFaint, textAlign: "center", marginTop: spacing.xl }]}>Practice · Corrections · Library · Settings →</Text></Pressable>
+        </Link>
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
-
-      {flash && (
-        <View style={[styles.flash, { backgroundColor: colors.gold }]}>
-          <Text style={[type.headline, { color: "#fff" }]}>{flash}</Text>
-        </View>
-      )}
     </SafeAreaView>
   );
 }
@@ -205,20 +209,7 @@ const styles = StyleSheet.create({
   scroll: { padding: spacing.lg, paddingBottom: 0 },
   strip: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   pill: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
-  countdown: { marginTop: spacing.xl },
-  rule: { height: StyleSheet.hairlineWidth },
-  block: { marginTop: spacing.xxl },
-  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  spark: { flexDirection: "row", gap: 5, alignItems: "flex-end", height: 52 },
-  sparkCol: { alignItems: "center", gap: 3 },
-  sparkBar: { width: 7, borderRadius: 3 },
-  sparkLbl: { fontSize: 9, fontFamily: type.caption.fontFamily },
-  track: { height: 4, borderRadius: 2, marginTop: spacing.sm, overflow: "hidden" },
-  fill: { height: "100%", borderRadius: 2 },
-  agenda: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingVertical: spacing.md },
-  dot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center" },
-  tick: { color: "#fff", fontSize: 12, fontFamily: type.headline.fontFamily },
-  shelf: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.xxl },
-  tile: { alignItems: "center", paddingVertical: spacing.lg, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
-  flash: { position: "absolute", bottom: spacing.xxl, alignSelf: "center", paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.pill },
+  doNext: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },
+  reflect: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1.5, borderStyle: "dashed" },
+  tutor: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, marginTop: spacing.lg },
 });
