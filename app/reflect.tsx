@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
+import { radius, spacing, subjectColors, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { computePlan, sessionKeyOf } from "../src/state/model";
 import { PressableScale } from "../src/components/PressableScale";
@@ -131,7 +131,7 @@ function Chip({ label, active, color, onPress, colors }: {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { padding: spacing.lg, paddingBottom: spacing.xxxl },
+  scroll: { padding: spacing.lg, paddingBottom: spacing.xxxl, ...bounded },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   field: { marginTop: spacing.lg, borderRadius: radius.lg, borderWidth: 1, padding: spacing.lg },

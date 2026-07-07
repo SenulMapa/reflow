@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
-import { spacing, type, radius } from "../src/theme/tokens";
+import { spacing, type, radius, bounded } from "../src/theme/tokens";
 import { studentModel, type ChatMessage } from "../src/state/model";
 import { useStore } from "../src/state/store";
 import { chatReply, type ChatMsg } from "../src/lib/llm";
@@ -169,11 +169,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   bar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: spacing.lg, paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, ...bounded,
   },
   circleBtn: { width: 40, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
 
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
+  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md, ...bounded },
   contentEmpty: { flexGrow: 1, justifyContent: "center" },
 
   aiRow: { alignItems: "stretch", marginVertical: spacing.sm },
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   emptyTitle: { textAlign: "center" },
   emptySub: { textAlign: "center" },
 
-  dockWrap: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, paddingTop: spacing.xs },
+  dockWrap: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, paddingTop: spacing.xs, ...bounded },
   dock: {
     flexDirection: "row", alignItems: "flex-end", gap: spacing.sm,
     borderRadius: radius.xl, borderWidth: 1, paddingLeft: spacing.lg, paddingRight: spacing.xs,

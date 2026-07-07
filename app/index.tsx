@@ -3,7 +3,7 @@ import { useEffect, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
-import { spacing, type, radius, subjectColors } from "../src/theme/tokens";
+import { spacing, type, radius, subjectColors, bounded } from "../src/theme/tokens";
 import { computePlan, sessionKeyOf, focusMinutesOn, studentModel } from "../src/state/model";
 import { useStore } from "../src/state/store";
 import { daysToNearestExam } from "../src/lib/buildWeek";
@@ -190,7 +190,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg, paddingBottom: 0 },
+  scroll: { padding: spacing.lg, paddingBottom: 0, ...bounded },
   strip: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   pill: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
   doNext: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.lg, borderRadius: radius.lg },

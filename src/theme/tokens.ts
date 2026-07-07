@@ -45,6 +45,11 @@ export type Palette = Record<keyof (typeof palette)["light"], string>;
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 40 } as const;
 export const radius = { sm: 10, md: 14, lg: 22, xl: 28, pill: 999 } as const;
 
+/** iPad/large-screen: cap the content column and centre it so the reading
+ *  measure stays comfortable instead of stretching edge-to-edge. */
+export const CONTENT_MAX_WIDTH = 600;
+export const bounded = { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: "center" } as const;
+
 /**
  * Editorial identity: **PP Editorial New** across the whole app. Only two weights
  * ship (Ultralight + Ultrabold + italics), so we pair them deliberately — Ultrabold

@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
+import { radius, spacing, subjectColors, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { PressableScale } from "../src/components/PressableScale";
 import { haptics } from "../src/lib/haptics";
@@ -200,7 +200,7 @@ export default function Timer() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  container: { flex: 1, padding: spacing.lg },
+  container: { flex: 1, padding: spacing.lg, ...bounded },
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xs },
   count: { fontSize: 80, fontFamily: type.data.fontFamily, fontVariant: ["tabular-nums"], letterSpacing: 1 },
