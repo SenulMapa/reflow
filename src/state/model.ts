@@ -37,10 +37,23 @@ export interface Correction {
   reviewed: boolean;
 }
 
+/** A logged past-paper attempt — feeds the allocator's performance signal. */
+export interface PastPaper {
+  id: string;
+  subjectId: string;
+  year: number;
+  month: string; // e.g. "May", "Jan"
+  variant: string; // e.g. "WMA11/01"
+  scorePct: number | null; // 0..100
+  weakChapters: string[];
+  date: string;
+}
+
 export interface ReflowState {
   config: ReflowConfig;
   week: WeekState;
   corrections: Correction[];
+  pastPapers: PastPaper[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -55,6 +68,7 @@ export function initialState(refDateISO: string): ReflowState {
     },
     week: { refDateISO, blocks: {} },
     corrections: [],
+    pastPapers: [],
   };
 }
 
@@ -179,6 +193,32 @@ export const removeCorrection = (s: ReflowState, id: string): ReflowState => ({
   corrections: s.corrections.filter((c) => c.id !== id),
 });
 
+// ── Past papers → performance signal (the macro half of the loop) ───────────
+
+export function addPastPaper(s: ReflowState, paper: PastPaper): ReflowState {
+  return { ...s, pastPapers: [paper, ...s.pastPapers] };
+}
+
+export const removePastPaper = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  pastPapers: s.pastPapers.filter((p) => p.id !== id),
+});
+
+/** Performance 0..1 for a subject = mean of its recent scored papers, or null. */
+export function subjectPerformance(s: ReflowState, subjectId: string, recent = 5): number | null {
+  const scored = s.pastPapers
+    .filter((p) => p.subjectId === subjectId && p.scorePct != null)
+    .slice(0, recent);
+  if (!scored.length) return null;
+  return scored.reduce((t, p) => t + (p.scorePct ?? 0), 0) / scored.length / 100;
+}
+
+export function performanceMap(s: ReflowState): Record<string, number | null> {
+  return Object.fromEntries(
+    s.config.subjects.map((subj) => [subj.id, subjectPerformance(s, subj.id)])
+  );
+}
+
 // ── Selector ────────────────────────────────────────────────────────────────
 
 export function computePlan(s: ReflowState): WeekPlan {
@@ -190,6 +230,7 @@ export function computePlan(s: ReflowState): WeekPlan {
       availability: config.availability,
       commitments: config.commitments,
       blocks: week.blocks,
+      performance: performanceMap(s),
       weeklyGoalHours: config.weeklyGoalHours,
       slotMinutes: config.slotMinutes,
       examWindowDays: config.examWindowDays,

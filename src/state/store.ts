@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { Interval } from "../engine/types";
 import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
-import type { Correction, ReflowState } from "./model";
+import type { Correction, PastPaper, ReflowState } from "./model";
 
 /** Calendar Monday (YYYY-MM-DD) of the current local week. */
 export function currentWeekStart(now: Date = new Date()): string {
@@ -30,6 +30,8 @@ interface Store {
   addCorrection: (c: Correction) => void;
   toggleCorrectionReviewed: (id: string) => void;
   removeCorrection: (id: string) => void;
+  addPastPaper: (p: PastPaper) => void;
+  removePastPaper: (id: string) => void;
   reset: () => void;
 }
 
@@ -56,10 +58,12 @@ export const useStore = create<Store>()(
       addCorrection: (c) => set(apply((s) => M.addCorrection(s, c))),
       toggleCorrectionReviewed: (id) => set(apply((s) => M.toggleCorrectionReviewed(s, id))),
       removeCorrection: (id) => set(apply((s) => M.removeCorrection(s, id))),
+      addPastPaper: (p) => set(apply((s) => M.addPastPaper(s, p))),
+      removePastPaper: (id) => set(apply((s) => M.removePastPaper(s, id))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v2",
+      name: "reflow-state-v3",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {

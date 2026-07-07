@@ -32,6 +32,8 @@ export function buildWeekInput(opts: {
   commitments?: AvailabilityTemplate;
   /** One-off blocks keyed by exact date (YYYY-MM-DD). */
   blocks?: Record<string, { start: number; end: number }[]>;
+  /** Per-subject past-paper performance 0..1 (lower = worse), or null. */
+  performance?: Record<string, number | null>;
   slotMinutes?: number;
   examWindowDays?: number;
 }): WeekInput {
@@ -59,7 +61,7 @@ export function buildWeekInput(opts: {
     subjectId: s.id,
     daysToExam: daysToNearestExam(s.id, opts.refDateISO),
     avgConfidence: effectiveConfidence(s),
-    performanceScore: null,
+    performanceScore: opts.performance?.[s.id] ?? null,
   }));
 
   return { days, subjects, config, weeklyGoalHours: opts.weeklyGoalHours, slotMinutes };
