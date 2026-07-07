@@ -1,85 +1,80 @@
-/**
- * "Exam Almanac" design tokens — a calm, editorial identity: warm paper, slate
- * ink, a scholarly slate-teal, and a single warm GOLD reserved for rewards
- * (coins, streaks, XP) so earning always glows. Fraunces (serif) carries the
- * personality; Inter handles body + data. Light + dark.
- */
+import type { TextStyle } from "react-native";
 
+/**
+ * "Orbit" identity — system-adaptive. Light = warm editorial (kraft paper,
+ * burnt-orange). Dark = glass at night (violet-biased near-black, violet accent,
+ * amber for rewards). SF (system) carries type; the subject ORBIT ring is the
+ * signature. Every token key from the previous identity is preserved so the
+ * whole app re-skins from this one file.
+ */
 export const palette = {
   light: {
-    bg: "#F2F0E8", // warm paper
-    bgElevated: "#FBFAF5",
-    surface: "#FBFAF5",
-    surfaceGlass: "rgba(251,250,245,0.8)",
-    separator: "rgba(34,37,43,0.10)",
-    text: "#22252B", // slate ink
-    textDim: "#6C6F76",
-    textFaint: "#AAA79D",
-    accent: "#2F4858", // scholarly slate-teal
-    accentSoft: "rgba(47,72,88,0.10)",
-    gold: "#B07D3F", // rewards: coins / streak / XP
-    goldSoft: "rgba(176,125,63,0.14)",
-    danger: "#B23A48",
-    success: "#3E7A5E",
-    warning: "#B07D3F",
+    bg: "#EFE7D6",            // warm kraft paper
+    surface: "#F7F1E4",       // raised card
+    separator: "rgba(38,34,28,0.10)",
+    text: "#26221C",
+    textDim: "#8C8069",
+    textFaint: "#B6A988",
+    accent: "#D9541E",        // burnt orange
+    accentSoft: "#F4DCC8",
+    gold: "#C8862E",          // rewards: coins / streak / XP (warm, distinct from accent)
+    goldSoft: "rgba(200,134,46,0.15)",
+    danger: "#C7503C",
+    success: "#3F9E6A",
+    warning: "#E7A339",
   },
   dark: {
-    bg: "#161719",
-    bgElevated: "#202225",
-    surface: "#202225",
-    surfaceGlass: "rgba(32,34,37,0.72)",
-    separator: "rgba(236,234,227,0.12)",
-    text: "#ECEAE3",
-    textDim: "#9A9C9E",
-    textFaint: "#63656A",
-    accent: "#89AEBC", // lifted slate-teal for dark paper
-    accentSoft: "rgba(137,174,188,0.15)",
-    gold: "#D6A45E",
-    goldSoft: "rgba(214,164,94,0.16)",
-    danger: "#E06B78",
+    bg: "#141219",            // violet-biased near-black
+    surface: "#211E2B",       // glass card
+    separator: "rgba(233,229,242,0.10)",
+    text: "#E9E5F2",
+    textDim: "#8A839C",
+    textFaint: "#5B5470",
+    accent: "#8B6FFF",        // violet
+    accentSoft: "#26203F",
+    gold: "#E7A339",          // amber rewards glow
+    goldSoft: "rgba(231,163,57,0.16)",
+    danger: "#E0705B",
     success: "#5FB088",
-    warning: "#D6A45E",
+    warning: "#E7A339",
   },
 } as const;
 
 export type Palette = Record<keyof (typeof palette)["light"], string>;
 
-/** Loaded via @expo-google-fonts in the root layout. */
-export const fonts = {
-  displayReg: "Fraunces_400Regular",
-  display: "Fraunces_600SemiBold",
-  displayItalic: "Fraunces_400Regular_Italic",
-  body: "Inter_400Regular",
-  medium: "Inter_500Medium",
-  semibold: "Inter_600SemiBold",
-  bold: "Inter_700Bold",
-} as const;
-
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 40 } as const;
-export const radius = { sm: 10, md: 14, lg: 20, xl: 26, pill: 999 } as const;
+export const radius = { sm: 10, md: 14, lg: 22, xl: 28, pill: 999 } as const;
 
 /**
- * Type scale. Fraunces for display/serif, Inter for the rest. NOTE: with a
- * specific-weight fontFamily, RN ignores fontWeight — weight lives in the family.
+ * Type scale on system SF. `fontFamily` is explicitly `undefined` (system font)
+ * so `fontWeight` is honoured AND existing `type.x.fontFamily` reads still
+ * typecheck. Heavy tight weights for display; tracked uppercase for captions.
  */
-export const type = {
-  hero: { fontFamily: fonts.display, fontSize: 40, lineHeight: 44, letterSpacing: -0.5 },
-  heroItalic: { fontFamily: fonts.displayItalic, fontSize: 38, lineHeight: 42, letterSpacing: -0.3 },
-  largeTitle: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, letterSpacing: -0.3 },
-  title: { fontFamily: fonts.display, fontSize: 24, lineHeight: 28, letterSpacing: -0.2 },
-  serif: { fontFamily: fonts.displayReg, fontSize: 22, lineHeight: 28 },
-  headline: { fontFamily: fonts.semibold, fontSize: 16, lineHeight: 20 },
-  body: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
-  callout: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20 },
-  footnote: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18 },
-  caption: { fontFamily: fonts.medium, fontSize: 11, lineHeight: 14, letterSpacing: 0.8 },
-  data: { fontFamily: fonts.semibold, fontSize: 16, fontVariant: ["tabular-nums" as const] },
-};
+const t = (
+  fontSize: number,
+  lineHeight: number,
+  fontWeight: TextStyle["fontWeight"],
+  extra: Partial<TextStyle> = {},
+): TextStyle => ({ fontFamily: undefined, fontSize, lineHeight, fontWeight, ...extra });
 
-/** Subject accent colors — muted, editorial. */
+export const type = {
+  hero:       t(34, 38, "800", { letterSpacing: -0.6 }),
+  heroItalic: t(30, 34, "800", { letterSpacing: -0.4, fontStyle: "italic" }),
+  largeTitle: t(28, 32, "800", { letterSpacing: -0.4 }),
+  title:      t(22, 26, "700", { letterSpacing: -0.2 }),
+  serif:      t(20, 27, "600"), // "serif" key retained; now a calm strong title
+  headline:   t(16, 20, "700"),
+  body:       t(15, 22, "400"),
+  callout:    t(14, 20, "500"),
+  footnote:   t(13, 18, "500"),
+  caption:    t(11, 14, "700", { letterSpacing: 1.4, textTransform: "uppercase" }),
+  data:       t(16, 20, "700", { fontVariant: ["tabular-nums"] }),
+} as const;
+
+/** Subject accent colours — carry both themes. */
 export const subjectColors: Record<string, string> = {
-  Mathematics: "#3A5199",
-  Physics: "#2E7D6B",
-  Psychology: "#A8475E",
-  "Computer Science": "#6B7A3A",
+  Mathematics: "#5B6CFF",
+  Physics: "#2E9E8F",
+  Psychology: "#C65B7C",
+  "Computer Science": "#7DA13A",
 };

@@ -52,6 +52,28 @@ function promptFor(task, input) {
         ' Grade {topic, explanation}. Reply {"score":0..10,"gaps":[string],"feedback":string}.',
       user: json,
     };
+  if (task === "plan_deck")
+    return {
+      system:
+        "You are the student's study tutor arranging their home dashboard for today. " +
+        "Input is {studentModel} (subjects with daysToExam, planned minutes, progress, unreviewed corrections, focus minutes). " +
+        "Choose and ORDER cards from this EXACT catalog to best help them right now: " +
+        "coach_note, orbits, do_next, momentum_ridge, garden_peek, reflect_cta, past_paper_nudge, correction_review, weakness_spotlight, exam_taper. " +
+        "Promote what matters (nearest exam, a dodged/weak subject, unreviewed corrections); keep it to 4-6 cards; always include coach_note first and reflect_cta. " +
+        'Reply STRICT JSON only: {"cards":[{"type":<catalog type>,"reason":<short string>}],"coachNote":{"body":<1-2 warm, specific sentences to the student>,"why":<short string|null>}}. ' +
+        "Only use catalog types. No prose outside the JSON.",
+      user: json,
+    };
+  if (task === "chat")
+    return {
+      system:
+        "You are the student's expert Edexcel/Cambridge IAL tutor inside their study app. " +
+        "Input is {messages:[{role,content}], studentModel}. Respond to the LATEST user message as their tutor: " +
+        "accurate to the IAL spec and mark schemes, concise, encouraging, and grounded in their studentModel when relevant. " +
+        "You may use light Markdown (bold, lists, short math) inside your reply. " +
+        'Reply with STRICT JSON only: {"reply":<your message as a single string>}. Nothing outside the JSON object.',
+      user: json,
+    };
   return { system: "Reply with strict JSON.", user: json };
 }
 
