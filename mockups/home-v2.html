@@ -1,0 +1,302 @@
+<title>Reflow — Home v2</title>
+<style>
+  :root{
+    --sf:-apple-system,"SF Pro Display","SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif;
+    --pageBg:#e7ddc9; --pageInk:#3a342a; --pageDim:#8a7f6a;
+    --maths:#5b6cff; --phys:#2e9e8f; --psych:#c65b7c;
+  }
+  @media (prefers-color-scheme:dark){:root{--pageBg:#100e15;--pageInk:#c9c4d6;--pageDim:#6c6580;}}
+  :root[data-theme="light"]{--pageBg:#e7ddc9;--pageInk:#3a342a;--pageDim:#8a7f6a;}
+  :root[data-theme="dark"]{--pageBg:#100e15;--pageInk:#c9c4d6;--pageDim:#6c6580;}
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sf);background:var(--pageBg);color:var(--pageInk);
+    -webkit-font-smoothing:antialiased;min-height:100vh;padding:40px 20px 64px;
+    transition:background .4s}
+  .head{max-width:880px;margin:0 auto 34px;text-align:center}
+  .kick{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--pageDim);font-weight:600}
+  .head h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:10px 0 8px;text-wrap:balance}
+  .head p{font-size:15px;line-height:1.5;color:var(--pageDim);max-width:52ch;margin:0 auto}
+  .stage{display:flex;gap:48px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:920px;margin:0 auto}
+  .lane{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .lane .tag{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--pageDim);font-weight:600}
+
+  /* ===== phone ===== */
+  .phone{width:340px;border-radius:46px;padding:11px;position:relative;
+    box-shadow:0 40px 80px -30px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.04)}
+  .phone.light{background:linear-gradient(160deg,#cfc3aa,#b9ac8f)}
+  .phone.dark{background:linear-gradient(160deg,#2b2740,#17141f)}
+  .scr{border-radius:36px;overflow:hidden;height:720px;position:relative;overflow-y:auto;scrollbar-width:none}
+  .scr::-webkit-scrollbar{display:none}
+
+  /* screen themes */
+  .light .scr{
+    --bg:#efe7d6; --raise:#f7f1e4; --line:#e0d4bc; --ink:#26221c; --dim:#8c8069; --faint:#b6a988;
+    --accent:#d9541e; --accentSoft:#f4dcc8; --glow:rgba(217,84,30,.16);
+    background:
+      radial-gradient(120% 60% at 80% -8%, rgba(243,222,187,.55), transparent 60%),
+      radial-gradient(90% 50% at 10% 0%, rgba(217,84,30,.10), transparent 60%),
+      #efe7d6;
+    color:var(--ink)}
+  .dark .scr{
+    --bg:#141219; --raise:#211e2b; --line:#2c2838; --ink:#e9e5f2; --dim:#8a839c; --faint:#5b5470;
+    --accent:#8b6fff; --accentSoft:#26203f; --glow:rgba(139,111,255,.28);
+    background:
+      radial-gradient(110% 55% at 82% -6%, rgba(231,163,57,.14), transparent 60%),
+      radial-gradient(120% 60% at 6% 2%, rgba(139,111,255,.20), transparent 60%),
+      #141219;
+    color:var(--ink)}
+
+  .scr{font-size:14px}
+  .pad{padding:0 20px}
+
+  /* status bar */
+  .status{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 4px;font-weight:600;font-size:13px}
+  .status .dots{display:flex;gap:5px;align-items:center;opacity:.85}
+  .status .dots i{width:15px;height:9px;border-radius:2px;background:currentColor;display:inline-block}
+  .status .dots .b{width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;background:none;position:relative}
+  .status .dots .b::after{content:"";position:absolute;inset:1.6px;right:5px;background:currentColor;border-radius:1px}
+
+  /* top strip */
+  .strip{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 0}
+  .strip .mark{font-weight:800;letter-spacing:-.02em;font-size:18px}
+  .pills{display:flex;gap:8px}
+  .pill{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:100px;font-size:12px;font-weight:700;
+    background:var(--accentSoft);color:var(--accent)}
+  .dark .pill{color:#e7a339;background:#2a2318}
+
+  .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:700}
+  .greet{font-size:27px;font-weight:800;letter-spacing:-.02em;margin-top:5px}
+  .greet .em{font-style:normal;color:var(--accent)}
+
+  /* coach note = the tutor's voice */
+  .coach{margin:16px 20px 0;background:var(--raise);border:1px solid var(--line);border-radius:22px;padding:16px 17px;
+    position:relative;overflow:hidden}
+  .coach::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.9}
+  .coach .who{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .coach .who .av{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 30% 25%,var(--accent),#0000),var(--accentSoft);
+    display:grid;place-items:center;font-size:12px}
+  .coach .who b{font-size:12px;letter-spacing:.04em}
+  .coach .who span{font-size:11px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .coach p{font-size:14px;line-height:1.5}
+  .coach p b{font-weight:700}
+  .coach .why{margin-top:10px;font-size:12px;color:var(--dim);display:flex;align-items:center;gap:6px}
+
+  /* section label */
+  .slabel{display:flex;justify-content:space-between;align-items:baseline;margin:24px 20px 12px}
+  .slabel .eyebrow{font-size:11px}
+  .slabel a{font-size:12px;color:var(--accent);font-weight:700;text-decoration:none}
+
+  /* orbits = signature */
+  .orbits{display:flex;gap:12px;padding:0 20px}
+  .orbit{flex:1;background:var(--raise);border:1px solid var(--line);border-radius:22px;padding:15px 10px 13px;
+    display:flex;flex-direction:column;align-items:center;gap:9px;position:relative}
+  .orbit.lead{box-shadow:0 0 0 1.5px var(--accent),0 14px 30px -18px var(--glow)}
+  .orbit .ring{position:relative;width:78px;height:78px}
+  .orbit .ring svg{transform:rotate(-90deg)}
+  .orbit .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+  .orbit .ctr .d{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+  .orbit .ctr .u{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:700;margin-top:2px}
+  .orbit .nm{font-size:12.5px;font-weight:700}
+  .orbit .cov{font-size:11px;color:var(--dim);font-weight:600}
+  .orbit .marker{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--raise);border:2.5px solid var(--accent);
+    top:2px;left:50%;transform:translateX(-50%)}
+
+  /* do next */
+  .donext{margin:12px 20px 0;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent),#000 18%));
+    border-radius:22px;padding:16px 18px;color:#fff;display:flex;align-items:center;gap:14px;
+    box-shadow:0 16px 34px -18px var(--glow)}
+  .dark .donext{color:#fff}
+  .donext .play{width:46px;height:46px;border-radius:15px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex-shrink:0}
+  .donext .play svg{width:18px;height:18px}
+  .donext .txt{flex:1;min-width:0}
+  .donext .txt .k{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;opacity:.85;font-weight:700}
+  .donext .txt .t{font-size:15.5px;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .donext .txt .s{font-size:12px;opacity:.85;margin-top:2px}
+  .donext .go{font-size:22px;opacity:.9}
+
+  /* momentum ridge */
+  .ridge{margin:12px 20px 0;background:var(--raise);border:1px solid var(--line);border-radius:22px;padding:15px 4px 8px 16px}
+  .ridge .rh{display:flex;justify-content:space-between;align-items:baseline;padding-right:14px}
+  .ridge .rh .n{font-size:19px;font-weight:800;letter-spacing:-.02em}
+  .ridge .rh .n small{font-size:12px;font-weight:600;color:var(--dim)}
+  .ridge svg{display:block;width:100%;height:64px;margin-top:4px;overflow:visible}
+
+  /* garden */
+  .garden{margin:12px 20px 0;background:var(--raise);border:1px solid var(--line);border-radius:22px;padding:15px 16px;
+    display:flex;align-items:center;gap:14px}
+  .garden .plot{display:flex;gap:3px;align-items:flex-end;height:38px;flex:1}
+  .garden .plot i{font-size:19px;line-height:1;filter:saturate(1.05)}
+  .garden .plot i.now{animation:sway 2.4s ease-in-out infinite}
+  @keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+  @media (prefers-reduced-motion:reduce){.garden .plot i.now{animation:none}}
+  .garden .meta .k{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:700}
+  .garden .meta .v{font-size:14px;font-weight:700;margin-top:3px}
+
+  /* reflect CTA */
+  .reflect{margin:12px 20px 0;border:1.5px dashed var(--line);border-radius:22px;padding:14px 16px;
+    display:flex;align-items:center;gap:13px;background:transparent}
+  .reflect .mic{width:40px;height:40px;border-radius:50%;background:var(--accentSoft);color:var(--accent);display:grid;place-items:center;flex-shrink:0}
+  .dark .reflect .mic{background:#2a2318;color:#e7a339}
+  .reflect .mic svg{width:17px;height:17px}
+  .reflect .rt .t{font-size:14px;font-weight:700}
+  .reflect .rt .s{font-size:12px;color:var(--dim);margin-top:2px}
+
+  /* tab bar */
+  .tabs{position:sticky;bottom:0;margin-top:18px;display:flex;justify-content:space-around;padding:12px 8px 18px;
+    background:linear-gradient(to top,var(--bg) 68%,transparent);backdrop-filter:blur(8px)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;font-weight:700;color:var(--faint);letter-spacing:.02em}
+  .tab.on{color:var(--accent)}
+  .tab svg{width:22px;height:22px}
+
+  .note{max-width:880px;margin:34px auto 0;text-align:center;font-size:13px;color:var(--pageDim);line-height:1.6}
+  .legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--pageDim)}
+  .legend b{color:var(--pageInk)}
+</style>
+
+<div class="head">
+  <div class="kick">Reflow · Home · v2 direction</div>
+  <h1>One dashboard the tutor arranges for you</h1>
+  <p>The same screen in both themes. The tutor writes the top card, promotes the subject you’re dodging, and lays out the deck — the engine still owns the schedule underneath. The <b>orbit ring</b> is the signature: fill = covered, marker = days to exam, centre = the countdown.</p>
+</div>
+
+<div class="stage">
+  <!-- ============ LIGHT ============ -->
+  <div class="lane">
+    <div class="tag">Light · warm editorial</div>
+    <div class="phone light"><div class="scr" id="scrL"></div></div>
+  </div>
+  <!-- ============ DARK ============ -->
+  <div class="lane">
+    <div class="tag">Dark · glass at night</div>
+    <div class="phone dark"><div class="scr" id="scrD"></div></div>
+  </div>
+</div>
+
+<div class="note">
+  Mockup — numbers are illustrative, not live. Everything shown is real app content: no “23.5h this week” filler.
+  <div class="legend">
+    <span>◔ <b>Orbit</b> = subject</span>
+    <span>✎ <b>Coach card</b> = MiniMax tutor</span>
+    <span>◠ <b>Ridge</b> = focus momentum</span>
+    <span>🌱 <b>Garden</b> = deep-work reward</span>
+    <span>🎙 <b>Reflect</b> = voice → tutor</span>
+  </div>
+</div>
+
+<script>
+  const subjects = [
+    {nm:"Maths",  col:"#5b6cff", cov:.34, d:327, lead:false},
+    {nm:"Physics",col:"#2e9e8f", cov:.28, d:341, lead:false},
+    {nm:"Psych",  col:"#c65b7c", cov:.41, d:300, lead:true},
+  ];
+  // ridge: focus minutes over 7 days (illustrative, modest, honest-feeling)
+  const ridge = [20,45,0,30,55,25,40], todayIdx=5;
+
+  function ring(s){
+    const r=32, c=2*Math.PI*r, off=c*(1-s.cov);
+    const trackCol = "var(--line)";
+    // marker angle from exam proximity within a 365 window -> position around ring
+    const frac = 1 - Math.min(1, s.d/365);          // closer exam -> further round
+    const ang = -90 + frac*360;
+    const mx = 39 + 36*Math.cos(ang*Math.PI/180);
+    const my = 39 + 36*Math.sin(ang*Math.PI/180);
+    return `
+    <div class="ring">
+      <svg width="78" height="78" viewBox="0 0 78 78">
+        <circle cx="39" cy="39" r="${r}" fill="none" stroke="${trackCol}" stroke-width="6"/>
+        <circle cx="39" cy="39" r="${r}" fill="none" stroke="${s.col}" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
+      </svg>
+      <div class="ctr"><div class="d">${s.d}</div><div class="u">days</div></div>
+      <div class="marker" style="left:${(mx/78*100).toFixed(1)}%;top:${(my/78*100).toFixed(1)}%;transform:translate(-50%,-50%);border-color:${s.col}"></div>
+    </div>`;
+  }
+
+  function ridgeSvg(){
+    const w=280,h=56,max=Math.max(...ridge,1), n=ridge.length;
+    const xs=i=>8+i*(w-16)/(n-1), ys=v=>h-4-(v/max)*(h-14);
+    let d=`M ${xs(0)} ${ys(ridge[0])}`;
+    for(let i=1;i<n;i++){const x0=xs(i-1),x1=xs(i),xm=(x0+x1)/2;
+      d+=` C ${xm} ${ys(ridge[i-1])}, ${xm} ${ys(ridge[i])}, ${x1} ${ys(ridge[i])}`;}
+    const tx=xs(todayIdx),ty=ys(ridge[todayIdx]);
+    const days=["M","T","W","T","F","S","S"];
+    let lbls=days.map((d,i)=>`<text x="${xs(i)}" y="${h+11}" text-anchor="middle" font-size="9" font-weight="700" fill="${i===todayIdx?'var(--accent)':'var(--faint)'}">${d}</text>`).join("");
+    return `<svg viewBox="0 0 ${w} ${h+16}" preserveAspectRatio="none">
+      <defs><linearGradient id="rg" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0" stop-color="var(--accent)" stop-opacity=".22"/>
+        <stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+      <path d="${d} L ${xs(n-1)} ${h} L ${xs(0)} ${h} Z" fill="url(#rg)"/>
+      <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${tx}" cy="${ty}" r="5" fill="var(--raise)" stroke="var(--accent)" stroke-width="2.6"/>
+      ${lbls}
+    </svg>`;
+  }
+
+  const I = {
+    play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/></svg>',
+    home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>',
+    focus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.3 7.3L3 21l1.7-6.7A8 8 0 1 1 21 12z"/></svg>',
+    plan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
+  };
+
+  function screen(){
+    return `
+    <div class="status"><span>21:04</span>
+      <span class="dots"><i style="width:11px"></i><i style="width:13px"></i><span style="font-weight:700;font-size:12px">5G</span><span class="b"></span></span>
+    </div>
+    <div class="strip">
+      <span class="mark">Reflow</span>
+      <div class="pills"><span class="pill">🔥 4</span><span class="pill">🪙 240</span></div>
+    </div>
+    <div class="pad" style="margin-top:14px">
+      <div class="eyebrow">Wed · 8 July · 327 days to first paper</div>
+      <div class="greet">Evening, <span class="em">Senul.</span></div>
+    </div>
+
+    <div class="coach">
+      <div class="who"><span class="av">✎</span><b>Your tutor</b><span>· from tonight’s reflection</span></div>
+      <p>You said <b>double-angle identities</b> still catch you out — so I’ve front-loaded a short S1 review and slid Physics to tomorrow. Psychology’s your nearest exam; let’s not let it drift.</p>
+      <div class="why">↳ reflowed 2 sessions · tap to see why</div>
+    </div>
+
+    <div class="slabel"><span class="eyebrow">Your subjects</span><a>All →</a></div>
+    <div class="orbits">
+      ${subjects.map(s=>`<div class="orbit ${s.lead?'lead':''}">${ring(s)}<div class="nm">${s.nm}</div><div class="cov">${Math.round(s.cov*100)}% covered</div></div>`).join("")}
+    </div>
+
+    <div class="donext">
+      <div class="play">${I.play}</div>
+      <div class="txt"><div class="k">Do next</div><div class="t">S1 · Hypothesis testing</div><div class="s">25 min focus · earns 🪙20 + a sprout</div></div>
+      <div class="go">→</div>
+    </div>
+
+    <div class="slabel"><span class="eyebrow">This week</span><a>Metrics →</a></div>
+    <div class="ridge">
+      <div class="rh"><div class="n">3h 35m <small>focused</small></div><div class="n" style="color:var(--dim);font-size:13px">18 sessions</div></div>
+      ${ridgeSvg()}
+    </div>
+
+    <div class="garden">
+      <div class="plot"><i>🌳</i><i>🌿</i><i>🌷</i><i>🌱</i><i>🌻</i><i>🌿</i><i>🪴</i><i>🌾</i><i class="now">🌱</i></div>
+      <div class="meta"><div class="k">Garden</div><div class="v">+3 this week</div></div>
+    </div>
+
+    <div class="reflect">
+      <div class="mic">${I.mic}</div>
+      <div class="rt"><div class="t">Reflect on a session</div><div class="s">Just talk — I’ll sort out what you covered.</div></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab on">${I.home}Home</div>
+      <div class="tab">${I.plan}Plan</div>
+      <div class="tab">${I.focus}Focus</div>
+      <div class="tab">${I.chat}Tutor</div>
+    </div>
+    <div style="height:6px"></div>`;
+  }
+  document.getElementById("scrL").innerHTML = screen();
+  document.getElementById("scrD").innerHTML = screen();
+</script>
