@@ -104,24 +104,32 @@ export default function ThisWeek() {
           </View>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
             <Link href="/timer" asChild>
-              <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+              <Pressable hitSlop={10}>
+              <View style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
                 <Text style={{ fontSize: 18 }}>⏱</Text>
-              </Pressable>
+              </View>
+            </Pressable>
             </Link>
             <Link href="/metrics" asChild>
-              <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+              <Pressable hitSlop={10}>
+              <View style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
                 <Text style={{ fontSize: 18 }}>📊</Text>
-              </Pressable>
+              </View>
+            </Pressable>
             </Link>
             <Link href="/corrections" asChild>
-              <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+              <Pressable hitSlop={10}>
+              <View style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
                 <Text style={{ fontSize: 18 }}>📓</Text>
-              </Pressable>
+              </View>
+            </Pressable>
             </Link>
             <Link href="/setup" asChild>
-              <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+              <Pressable hitSlop={10}>
+              <View style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
                 <Text style={{ fontSize: 18 }}>⚙︎</Text>
-              </Pressable>
+              </View>
+            </Pressable>
             </Link>
           </View>
         </View>
