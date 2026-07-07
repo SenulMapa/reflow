@@ -8,6 +8,7 @@
  */
 
 const LLM_URL = process.env.EXPO_PUBLIC_LLM_URL;
+const LLM_TOKEN = process.env.EXPO_PUBLIC_LLM_TOKEN;
 
 export type LLMTask = "parse_block" | "quiz" | "grade_feynman";
 
@@ -19,7 +20,10 @@ export async function generate<T = unknown>(task: LLMTask, input: unknown): Prom
   if (!LLM_URL) throw new Error("LLM not configured");
   const res = await fetch(LLM_URL, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(LLM_TOKEN ? { authorization: `Bearer ${LLM_TOKEN}` } : {}),
+    },
     body: JSON.stringify({ task, input }),
   });
   if (!res.ok) throw new Error(`LLM request failed: ${res.status}`);

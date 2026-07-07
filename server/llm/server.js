@@ -3,11 +3,23 @@
 // behind the box's Caddy (the box has no Supabase edge-runtime). Provider is
 // swappable via env; MiniMax M2 is a reasoning model, so we strip <think> blocks.
 const http = require("http");
+const crypto = require("crypto");
 
 const API_KEY = process.env.MINIMAX_API_KEY || "";
 const BASE_URL = process.env.MINIMAX_BASE_URL || "https://api.minimax.io/v1";
 const MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2";
 const PORT = parseInt(process.env.PORT || "8787", 10);
+// Shared secret the app must present (Bearer). Unset ⇒ auth disabled (dev).
+const AUTH_TOKEN = process.env.REFLOW_LLM_TOKEN || "";
+
+function authorized(req) {
+  if (!AUTH_TOKEN) return true;
+  const hdr = req.headers["authorization"] || "";
+  const provided = hdr.startsWith("Bearer ") ? hdr.slice(7) : "";
+  const a = Buffer.from(provided);
+  const b = Buffer.from(AUTH_TOKEN);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 const SYSTEM_IAL =
   "You are an expert Edexcel/Cambridge IAL examiner. Prioritise official " +
@@ -84,8 +96,9 @@ const send = (res, code, obj) => {
 http
   .createServer((req, res) => {
     if (req.method === "OPTIONS") return send(res, 204, {});
-    if (req.method === "GET") return send(res, 200, { ok: true, model: MODEL });
+    if (req.method === "GET") return send(res, 200, { ok: true, model: MODEL, auth: !!AUTH_TOKEN });
     if (req.method !== "POST") return send(res, 405, { error: "method not allowed" });
+    if (!authorized(req)) return send(res, 401, { error: "unauthorized" });
     let raw = "";
     req.on("data", (c) => (raw += c));
     req.on("end", async () => {
