@@ -6,6 +6,7 @@ import {
   type AvailabilityTemplate,
 } from "../lib/buildWeek";
 import { DEMO_SUBJECTS, type StudySubject, type Topic } from "../data/subjects";
+import { EARN, type Progress, type RewardItem } from "./rewards";
 
 /**
  * Pure app state + reducers. No React, no storage, no I/O — so the whole state
@@ -85,6 +86,7 @@ export interface ReflowState {
   sources: Source[];
   /** Per-session completion, keyed by sessionKeyOf(). */
   sessionStatus: Record<string, "done" | "skipped">;
+  progress: Progress;
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -103,6 +105,18 @@ export function initialState(refDateISO: string): ReflowState {
     focusSessions: [],
     sources: [],
     sessionStatus: {},
+    progress: {
+      coins: 240,
+      xp: 320,
+      streakDays: 3,
+      lastStudyDate: null,
+      rewards: [
+        { id: "yt", label: "30 min YouTube", cost: 60, icon: "📺" },
+        { id: "game", label: "1 hour gaming", cost: 120, icon: "🎮" },
+        { id: "film", label: "Film night", cost: 300, icon: "🎬" },
+      ],
+      ledger: [],
+    },
   };
 }
 
@@ -305,6 +319,55 @@ export function setSessionStatus(
   if (status === null) delete next[key];
   else next[key] = status;
   return { ...s, sessionStatus: next };
+}
+
+// ── Reward economy (earn by studying, spend on leisure) ─────────────────────
+
+const shiftDate = (iso: string, days: number) => {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+
+export function award(s: ReflowState, coins: number, xp: number, reason: string, date: string): ReflowState {
+  const p = s.progress;
+  const entry = { id: `${date}-${p.ledger.length}`, kind: "earn" as const, amount: coins, reason, date };
+  return { ...s, progress: { ...p, coins: p.coins + coins, xp: p.xp + xp, ledger: [entry, ...p.ledger].slice(0, 60) } };
+}
+
+/** Count today toward the streak (consecutive study days). Idempotent per day. */
+export function touchStreak(s: ReflowState, date: string): ReflowState {
+  const p = s.progress;
+  if (p.lastStudyDate === date) return s;
+  const streakDays = p.lastStudyDate === shiftDate(date, -1) ? p.streakDays + 1 : 1;
+  return { ...s, progress: { ...p, streakDays, lastStudyDate: date } };
+}
+
+/** Mark a session done (idempotent) → count the streak + award session coins/xp. */
+export function markSessionDone(s: ReflowState, key: string, date: string): ReflowState {
+  if (s.sessionStatus[key] === "done") return s;
+  const withStatus = setSessionStatus(s, key, "done");
+  const withStreak = touchStreak(withStatus, date);
+  return award(withStreak, EARN.session.coins, EARN.session.xp, "Session complete", date);
+}
+
+export function addReward(s: ReflowState, item: RewardItem): ReflowState {
+  return { ...s, progress: { ...s.progress, rewards: [...s.progress.rewards, item] } };
+}
+
+export function removeReward(s: ReflowState, id: string): ReflowState {
+  return { ...s, progress: { ...s.progress, rewards: s.progress.rewards.filter((r) => r.id !== id) } };
+}
+
+/** Spend coins on a reward if affordable; unchanged state if not. */
+export function redeemReward(s: ReflowState, id: string, date: string): ReflowState {
+  const item = s.progress.rewards.find((r) => r.id === id);
+  if (!item || s.progress.coins < item.cost) return s;
+  const entry = { id: `${date}-spend-${s.progress.ledger.length}`, kind: "spend" as const, amount: item.cost, reason: item.label, date };
+  return {
+    ...s,
+    progress: { ...s.progress, coins: s.progress.coins - item.cost, ledger: [entry, ...s.progress.ledger].slice(0, 60) },
+  };
 }
 
 // ── Selector ────────────────────────────────────────────────────────────────

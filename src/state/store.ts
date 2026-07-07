@@ -5,6 +5,7 @@ import type { Interval } from "../engine/types";
 import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
 import type { Correction, FocusSession, PastPaper, ReflowState, Source } from "./model";
+import type { RewardItem } from "./rewards";
 
 /** Calendar Monday (YYYY-MM-DD) of the current local week. */
 export function currentWeekStart(now: Date = new Date()): string {
@@ -37,6 +38,11 @@ interface Store {
   addSource: (s: Source) => void;
   removeSource: (id: string) => void;
   setSessionStatus: (key: string, status: "done" | "skipped" | null) => void;
+  markSessionDone: (key: string, date: string) => void;
+  award: (coins: number, xp: number, reason: string, date: string) => void;
+  addReward: (item: RewardItem) => void;
+  removeReward: (id: string) => void;
+  redeemReward: (id: string, date: string) => void;
   reset: () => void;
 }
 
@@ -70,10 +76,15 @@ export const useStore = create<Store>()(
       addSource: (src) => set(apply((s) => M.addSource(s, src))),
       removeSource: (id) => set(apply((s) => M.removeSource(s, id))),
       setSessionStatus: (key, status) => set(apply((s) => M.setSessionStatus(s, key, status))),
+      markSessionDone: (key, date) => set(apply((s) => M.markSessionDone(s, key, date))),
+      award: (coins, xp, reason, date) => set(apply((s) => M.award(s, coins, xp, reason, date))),
+      addReward: (item) => set(apply((s) => M.addReward(s, item))),
+      removeReward: (id) => set(apply((s) => M.removeReward(s, id))),
+      redeemReward: (id, date) => set(apply((s) => M.redeemReward(s, id, date))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v6",
+      name: "reflow-state-v7",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {
