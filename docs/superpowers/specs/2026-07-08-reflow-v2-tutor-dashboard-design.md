@@ -81,8 +81,8 @@ The heart of "the tutor knows you." Replaces manual coverage-tapping.
 
 ### Flow
 1. **Record** — after a session (or anytime via `reflect_cta`), the student taps the mic and rambles.
-2. **Transcribe** — on-device ASR.
-   - **Dev/AltStore build:** `expo-speech-recognition` (wraps Apple Speech framework, on-device).
+2. **Transcribe** — on-device ASR, tiered so the same loop works everywhere:
+   - **Dev/AltStore build (primary): `whisper.rn`** — a bundled `ggml-tiny.en`/`base.en` model running via whisper.cpp, **Core ML on iOS** (Neural Engine/Metal), fully offline. Its `RealtimeTranscriber` + VAD lets the reflect screen stream words in live as the student talks. Same Whisper family as the box. Bundled as a `require()` asset (metro configured for `.bin`). Alternative: Apple Speech via `expo-speech-recognition` (`requiresOnDeviceRecognition:true`) — no model to bundle, but less control and no bundled-model guarantee, so `whisper.rn` leads.
    - **Expo Go / fallback:** record audio (`expo-audio`) → POST to the box's faster-whisper endpoint (already running) → transcript. Same downstream.
    - **Last resort:** type it. The loop is identical from step 3.
 3. **Distill** — `generate("distill_reflection", { transcript, subjectId, sessionId })` → structured:
@@ -179,7 +179,7 @@ Usable and better after every step; each keeps tests green and is verified local
 - **SP6 — Garden focus timer.** Custom durations, grow/wilt, richer `focus_sessions`, coins + reflection handoff.
 - **SP7 — AI tutor chat.** Grounded chat + safe action tools routing through engine/reducers.
 
-Deferred to SDK 56 / native build (unchanged): Liquid Glass into `<Surface>`, Siri App Intents, lock-screen widget, on-device ASR via `expo-speech-recognition` (until the AltStore build). Deferred to production: onboarding flow, IAL RAG knowledge base.
+Deferred to SDK 56 / native build (unchanged): Liquid Glass into `<Surface>`, Siri App Intents, lock-screen widget, and on-device `whisper.rn` (needs the native AltStore build; box-Whisper covers the gap until then). Deferred to production: onboarding flow, IAL RAG knowledge base.
 
 ## Verification per sub-project
 - Engine/reducers: unit tests (coverage math, deck fallback validity, reflection application, no lost hours).
