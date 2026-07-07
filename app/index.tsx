@@ -1,141 +1,109 @@
+import { Link } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
-import { DEMO_SUBJECTS } from "../src/data/subjects";
-import { buildWeekInput, DEFAULT_AVAILABILITY } from "../src/lib/buildWeek";
-import { planWeek, reflow, type WeekInput, type WeekPlan } from "../src/engine/week";
-import type { PlacedSession } from "../src/engine/placer/types";
+import { computePlan } from "../src/state/model";
+import { useStore } from "../src/state/store";
+import type { Interval } from "../src/engine/types";
 import { dayNum, fmtHours, fmtTime, weekdayShort } from "../src/lib/format";
 
-const REF_DATE = "2027-04-25"; // demo week ~10 days before IAL exams
-const NAME_BY_ID = Object.fromEntries(DEMO_SUBJECTS.map((s) => [s.id, s.name]));
-const colorFor = (id: string) => subjectColors[NAME_BY_ID[id] ?? ""] ?? "#5E5CE6";
+const colorFor = (id: string, name?: string) =>
+  subjectColors[name ?? ""] ?? subjectColors[id] ?? "#5E5CE6";
 
-const minutes = (ss: PlacedSession[]) =>
-  ss.reduce((t, s) => t + (s.interval.end - s.interval.start), 0);
-
-function baseInput(): WeekInput {
-  return buildWeekInput({
-    refDateISO: REF_DATE,
-    subjects: DEMO_SUBJECTS,
-    availability: DEFAULT_AVAILABILITY,
-    weeklyGoalHours: 24,
-  });
-}
+const shiftISO = (iso: string, days: number) => {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+const minutes = (iv: { interval: Interval }[]) =>
+  iv.reduce((t, s) => t + (s.interval.end - s.interval.start), 0);
 
 export default function ThisWeek() {
   const { colors } = useTheme();
-  const [input, setInput] = useState<WeekInput>(baseInput);
-  const [plan, setPlan] = useState<WeekPlan>(() => planWeek(baseInput()));
+  const state = useStore((s) => s.state);
+  const addBlock = useStore((s) => s.addBlock);
+  const removeBlock = useStore((s) => s.removeBlock);
+  const setRefDate = useStore((s) => s.setRefDate);
   const [banner, setBanner] = useState<{ text: string; undo: () => void } | null>(null);
 
-  const weekRange = useMemo(() => {
-    const d0 = input.days[0]!.date;
-    const d6 = input.days[6]!.date;
-    return `${weekdayShort(d0)} ${dayNum(d0)} – ${weekdayShort(d6)} ${dayNum(d6)}`;
-  }, [input]);
+  const nameById = useMemo(
+    () => Object.fromEntries(state.config.subjects.map((s) => [s.id, s.name])),
+    [state.config.subjects]
+  );
+  const plan = useMemo(() => computePlan(state), [state]);
+
+  const days = useMemo(() => {
+    const out: string[] = [];
+    for (let i = 0; i < 7; i++) out.push(shiftISO(state.week.refDateISO, i));
+    return out;
+  }, [state.week.refDateISO]);
 
   const totalPlanned = minutes(plan.sessions);
   const unplaced = Object.entries(plan.unplacedHours).filter(([, h]) => h > 0.01);
 
-  /** Demo: block a 2h chunk on the busiest day and watch the week rebalance. */
-  function simulateBlock() {
-    const perDay = new Map<string, number>();
-    for (const s of plan.sessions) {
-      perDay.set(s.date, (perDay.get(s.date) ?? 0) + (s.interval.end - s.interval.start));
-    }
-    const busiest = [...perDay.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-    if (!busiest) return;
-
-    const dayIdx = input.days.findIndex((d) => d.date === busiest);
-    const day = input.days[dayIdx]!;
-    const win = day.availability[0]!;
-    const blockStart = win.start;
-    const block = { start: blockStart, end: Math.min(blockStart + 120, win.end) };
-
-    const prevInput = input;
-    const prevPlan = plan;
-    const nextInput: WeekInput = {
-      ...input,
-      days: input.days.map((d, i) =>
-        i === dayIdx ? { ...d, blocks: [...d.blocks, block] } : d
-      ),
-    };
-    const { plan: nextPlan, diff } = reflow(prevPlan, nextInput);
-
-    const movedH = fmtHours(minutes(diff.removed) / 60);
-    const toDays = [...new Set(diff.added.map((s) => weekdayShort(s.date)))].join(", ");
-    setInput(nextInput);
-    setPlan(nextPlan);
+  function blockDay(date: string) {
+    const wd = new Date(date + "T00:00:00Z").getUTCDay();
+    const win = state.config.availability[wd]?.[0];
+    if (!win) return;
+    const block: Interval = { start: win.start, end: Math.min(win.start + 120, win.end) };
+    const idx = (state.week.blocks[date] ?? []).length;
+    addBlock(date, block);
     setBanner({
-      text: `Blocked ${fmtTime(block.start)}–${fmtTime(block.end)} ${weekdayShort(busiest)} · moved ${movedH} → ${toDays || "elsewhere"}`,
+      text: `Blocked ${fmtTime(block.start)}–${fmtTime(block.end)} · rebalanced ${weekdayShort(date)}`,
       undo: () => {
-        setInput(prevInput);
-        setPlan(prevPlan);
+        removeBlock(date, idx);
         setBanner(null);
       },
     });
   }
 
-  function reset() {
-    const b = baseInput();
-    setInput(b);
-    setPlan(planWeek(b));
-    setBanner(null);
-  }
-
   const sessionsByDate = (date: string) =>
-    plan.sessions
-      .filter((s) => s.date === date)
-      .sort((a, b) => a.interval.start - b.interval.start);
+    plan.sessions.filter((s) => s.date === date).sort((a, b) => a.interval.start - b.interval.start);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={[type.footnote, { color: colors.accent, fontWeight: "700", letterSpacing: 1 }]}>
-          THIS WEEK · {weekRange}
+        {/* Header */}
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={[type.footnote, { color: colors.accent, fontWeight: "700", letterSpacing: 1 }]}>
+              {weekdayShort(days[0]!)} {dayNum(days[0]!)} – {weekdayShort(days[6]!)} {dayNum(days[6]!)}
+            </Text>
+            <Text style={[type.largeTitle, { color: colors.text }]}>This Week</Text>
+          </View>
+          <Link href="/setup" asChild>
+            <Pressable hitSlop={10} style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+              <Text style={{ fontSize: 18 }}>⚙︎</Text>
+            </Pressable>
+          </Link>
+        </View>
+
+        <Text style={[type.callout, { color: colors.textDim }]}>
+          {fmtHours(totalPlanned / 60)} planned toward your {fmtHours(state.config.weeklyGoalHours)} goal
         </Text>
-        <Text style={[type.largeTitle, { color: colors.text, marginTop: 2 }]}>Schedule</Text>
-        <Text style={[type.callout, { color: colors.textDim, marginTop: 2 }]}>
-          {fmtHours(totalPlanned / 60)} planned toward your {fmtHours(input.weeklyGoalHours)} goal
-        </Text>
+
+        {/* Week nav */}
+        <View style={styles.weekNav}>
+          <Pressable onPress={() => setRefDate(shiftISO(state.week.refDateISO, -7))} style={[styles.navBtn, { backgroundColor: colors.accentSoft }]}>
+            <Text style={[type.headline, { color: colors.accent }]}>‹ Prev</Text>
+          </Pressable>
+          <Pressable onPress={() => setRefDate(shiftISO(state.week.refDateISO, 7))} style={[styles.navBtn, { backgroundColor: colors.accentSoft }]}>
+            <Text style={[type.headline, { color: colors.accent }]}>Next ›</Text>
+          </Pressable>
+        </View>
 
         {/* Allocation chips */}
         <View style={styles.chips}>
           {plan.allocations.map((a) => (
             <View key={a.subjectId} style={[styles.chip, { backgroundColor: colors.surface }]}>
-              <View style={[styles.dot, { backgroundColor: colorFor(a.subjectId) }]} />
-              <Text style={[type.footnote, { color: colors.text, fontWeight: "600" }]}>
-                {NAME_BY_ID[a.subjectId]}
-              </Text>
+              <View style={[styles.dot, { backgroundColor: colorFor(a.subjectId, nameById[a.subjectId]) }]} />
+              <Text style={[type.footnote, { color: colors.text, fontWeight: "600" }]}>{nameById[a.subjectId] ?? a.subjectId}</Text>
               <Text style={[type.footnote, { color: colors.textDim }]}>{fmtHours(a.hours)}</Text>
             </View>
           ))}
-        </View>
-
-        {/* Reflow demo controls */}
-        <View style={styles.actions}>
-          <Pressable
-            onPress={simulateBlock}
-            style={({ pressed }) => [
-              styles.btn,
-              { backgroundColor: colors.accent, opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Text style={[type.headline, { color: "#fff" }]}>Block busiest slot →</Text>
-          </Pressable>
-          <Pressable
-            onPress={reset}
-            style={({ pressed }) => [
-              styles.btnGhost,
-              { backgroundColor: colors.accentSoft, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Text style={[type.headline, { color: colors.accent }]}>Reset</Text>
-          </Pressable>
         </View>
 
         {banner && (
@@ -150,37 +118,48 @@ export default function ThisWeek() {
         {unplaced.length > 0 && (
           <Surface style={{ marginTop: spacing.md, backgroundColor: colors.accentSoft }}>
             <Text style={[type.footnote, { color: colors.warning, fontWeight: "600" }]}>
-              Couldn’t fit {unplaced.map(([id, h]) => `${fmtHours(h)} ${NAME_BY_ID[id]}`).join(", ")} this week.
+              Couldn’t fit {unplaced.map(([id, h]) => `${fmtHours(h)} ${nameById[id] ?? id}`).join(", ")} this week.
             </Text>
           </Surface>
         )}
 
         {/* Days */}
         <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
-          {input.days.map((d) => {
-            const ss = sessionsByDate(d.date);
+          {days.map((date) => {
+            const ss = sessionsByDate(date);
+            const blocks = state.week.blocks[date] ?? [];
             return (
-              <Surface key={d.date} padded={false} style={styles.dayCard}>
+              <Surface key={date} padded={false} style={styles.dayCard}>
                 <View style={styles.dayHeader}>
                   <Text style={[type.headline, { color: colors.text }]}>
-                    {weekdayShort(d.date)} {dayNum(d.date)}
+                    {weekdayShort(date)} {dayNum(date)}
                   </Text>
-                  <Text style={[type.footnote, { color: colors.textFaint }]}>
-                    {ss.length ? fmtHours(minutes(ss) / 60) : "rest"}
-                  </Text>
-                </View>
-                {ss.map((s, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.session,
-                      { borderTopColor: colors.separator, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                    ]}
-                  >
-                    <View style={[styles.bar, { backgroundColor: colorFor(s.subjectId) }]} />
-                    <Text style={[type.body, { color: colors.text, flex: 1 }]}>
-                      {NAME_BY_ID[s.subjectId]}
+                  <View style={styles.dayHeaderRight}>
+                    <Text style={[type.footnote, { color: colors.textFaint }]}>
+                      {ss.length ? fmtHours(minutes(ss) / 60) : "rest"}
                     </Text>
+                    <Pressable onPress={() => blockDay(date)} hitSlop={8}>
+                      <Text style={[type.footnote, { color: colors.accent, fontWeight: "700" }]}>＋ Block</Text>
+                    </Pressable>
+                  </View>
+                </View>
+
+                {blocks.map((b, i) => (
+                  <View key={`b${i}`} style={[styles.session, { backgroundColor: colors.accentSoft }]}>
+                    <View style={[styles.bar, { backgroundColor: colors.danger }]} />
+                    <Text style={[type.callout, { color: colors.danger, flex: 1 }]}>
+                      Blocked {fmtTime(b.start)} – {fmtTime(b.end)}
+                    </Text>
+                    <Pressable onPress={() => removeBlock(date, i)} hitSlop={8}>
+                      <Text style={[type.headline, { color: colors.accent }]}>✕</Text>
+                    </Pressable>
+                  </View>
+                ))}
+
+                {ss.map((s, i) => (
+                  <View key={i} style={[styles.session, { borderTopColor: colors.separator, borderTopWidth: i === 0 && blocks.length === 0 ? 0 : StyleSheet.hairlineWidth }]}>
+                    <View style={[styles.bar, { backgroundColor: colorFor(s.subjectId, nameById[s.subjectId]) }]} />
+                    <Text style={[type.body, { color: colors.text, flex: 1 }]}>{nameById[s.subjectId] ?? s.subjectId}</Text>
                     <Text style={[type.callout, { color: colors.textDim }]}>
                       {fmtTime(s.interval.start)} – {fmtTime(s.interval.end)}
                     </Text>
@@ -199,52 +178,17 @@ export default function ThisWeek() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg, paddingBottom: 0 },
+  headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
+  iconBtn: { width: 40, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  weekNav: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+  navBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md, alignItems: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: spacing.lg },
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-  },
+  chip: { flexDirection: "row", alignItems: "center", gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
-  btn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  btnGhost: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  banner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
+  banner: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.md },
   dayCard: { overflow: "hidden" },
-  dayHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  session: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
+  dayHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  dayHeaderRight: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  session: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   bar: { width: 4, height: 22, borderRadius: 2 },
 });

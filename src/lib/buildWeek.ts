@@ -28,6 +28,10 @@ export function buildWeekInput(opts: {
   subjects: StudySubject[];
   availability: AvailabilityTemplate;
   weeklyGoalHours: number;
+  /** Per-weekday recurring fixed commitments (classes, labs). */
+  commitments?: AvailabilityTemplate;
+  /** One-off blocks keyed by exact date (YYYY-MM-DD). */
+  blocks?: Record<string, { start: number; end: number }[]>;
   slotMinutes?: number;
   examWindowDays?: number;
 }): WeekInput {
@@ -42,11 +46,12 @@ export function buildWeekInput(opts: {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start.getTime() + i * DAY_MS);
     const wd = d.getUTCDay();
+    const date = iso(d);
     days.push({
-      date: iso(d),
+      date,
       availability: (opts.availability[wd] ?? []).map((w) => ({ ...w })),
-      commitments: [],
-      blocks: [],
+      commitments: (opts.commitments?.[wd] ?? []).map((w) => ({ ...w })),
+      blocks: (opts.blocks?.[date] ?? []).map((w) => ({ ...w })),
     });
   }
 
