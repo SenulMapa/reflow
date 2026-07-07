@@ -1,0 +1,18 @@
+# Deploy on the box: joins the existing Caddy network so Caddy can reverse_proxy
+# to `llm:8787`. Key comes from .env (MINIMAX_API_KEY=..., mode 600, gitignored).
+services:
+  llm:
+    build: .
+    container_name: reflow-llm
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8787"
+    mem_limit: 128m
+    networks:
+      - gruv
+
+networks:
+  gruv:
+    name: gruv-proxy_default
+    external: true

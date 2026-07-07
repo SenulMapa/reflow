@@ -50,6 +50,17 @@ npx expo export -p web  # bundle check
 | 6 — Siri App Intents | ⏳ needs Mac/AltStore signing |
 | KB — IAL RAG grounding | ⏳ needs official source PDFs |
 
+## Backend — `/llm` proxy (deployed)
+
+The AI proxy is **live on the box**: a tiny Node service (`server/llm/`) holding the MiniMax key, running as container `reflow-llm` on the Caddy network, routed at `https://104-208-72-98.sslip.io/llm` (real Let's Encrypt cert, valid on iOS). Model: `MiniMax-M2` (reasoning model; the proxy strips `<think>` blocks). The app reads `EXPO_PUBLIC_LLM_URL` (see `.env.example`); unset ⇒ fully offline.
+
+Verify from a real network (your laptop/phone — the endpoint isn't reachable from every host):
+```bash
+curl https://104-208-72-98.sslip.io/llm   # -> {"ok":true,"model":"MiniMax-M2"}
+```
+
+⚠️ The endpoint is currently **unauthenticated** — fine for personal use, but add a shared-secret header before making it public (it spends the MiniMax key). Redeploy after code changes: `scp server/llm/server.js` to `~/reflow-llm/` on the box, then `cd ~/reflow-llm && sudo docker compose up -d --build`.
+
 ## To unblock the rest
 1. **Box**: `ssh -i ~/OpenClaw_key.pem senul@100.86.148.112 -p 2222` → confirm self-hosted Supabase → apply schema + Storage bucket → `supabase functions deploy llm` → set `MINIMAX_API_KEY` (+ verify `MINIMAX_BASE_URL`/`MODEL`) → set `EXPO_PUBLIC_LLM_URL` in the app.
 2. **KB**: drop the official IAL specs / mark schemes / examiner reports / booklets somewhere the ingestion pipeline can read them.
