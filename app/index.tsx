@@ -101,7 +101,7 @@ export default function Home() {
     coach_note: <CoachCard body={coachBody} why={coachWhy} />,
     orbits: <OrbitRow subjects={orbitSubjects} leadId={leadId} />,
     do_next: next ? (
-      <PressableScale haptic="light" onPress={() => router.push("/week")} style={[styles.doNext, { backgroundColor: colors.accent }]}>
+      <PressableScale haptic="light" onPress={() => router.push("/timer")} style={[styles.doNext, { backgroundColor: colors.accent }]}>
         <View style={{ flex: 1 }}>
           <Text style={[type.caption, { color: "#fff", opacity: 0.85 }]}>DO NEXT</Text>
           <Text style={[type.headline, { color: "#fff", marginTop: 3 }]}>{nameById[next.subjectId]}</Text>
@@ -121,9 +121,14 @@ export default function Home() {
         subLabel="this week"
       />
     ),
-    garden_peek: <Garden plants={[]} caption="grows as you focus" />,
+    garden_peek: (
+      <Garden
+        plants={state.garden.slice(-12).map((p) => p.kind)}
+        caption={state.garden.length ? `${state.garden.length} grown` : "grows as you focus"}
+      />
+    ),
     reflect_cta: (
-      <PressableScale onPress={() => router.push("/week")} style={[styles.reflect, { borderColor: colors.separator }]}>
+      <PressableScale onPress={() => router.push("/reflect")} style={[styles.reflect, { borderColor: colors.separator }]}>
         <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: colors.accent, fontSize: 17 }}>🎙</Text>
         </View>

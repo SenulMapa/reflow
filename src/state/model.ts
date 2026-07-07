@@ -8,6 +8,7 @@ import {
 } from "../lib/buildWeek";
 import { DEMO_SUBJECTS, type StudySubject, type Topic } from "../data/subjects";
 import { EARN, levelForXp, type Progress, type RewardItem } from "./rewards";
+import { DEFAULT_POMODORO, type PomodoroConfig } from "../lib/pomodoro";
 import type { DeckPlan } from "../ui/deck";
 
 /**
@@ -21,6 +22,8 @@ export interface ReflowConfig {
   weeklyGoalHours: number;
   slotMinutes: number;
   examWindowDays: number;
+  /** Focus-timer durations (editable by the student). */
+  pomodoro: PomodoroConfig;
 }
 
 export interface WeekState {
@@ -58,6 +61,28 @@ export interface FocusSession {
   subjectId?: string;
   date: string;
   minutes: number;
+}
+
+/** A plant earned by completing a focus session — the garden reward. */
+export interface Plant {
+  id: string;
+  kind: string; // emoji glyph
+  subjectId?: string;
+  date: string;
+}
+
+/** Kinds cycle for variety as the garden fills. */
+export const GARDEN_KINDS = ["🌱", "🌿", "🌷", "🌻", "🪴", "🌵", "🌳", "🌴", "🍀", "🌸"];
+
+/** A post-session reflection: the student says what happened, the tutor cleans it up. */
+export interface Reflection {
+  id: string;
+  sessionId?: string;
+  subjectId?: string;
+  minutes?: number;
+  date: string;
+  raw: string; // what the student said/typed
+  summary?: string; // tutor's cleaned-up version (optional)
 }
 
 /** A knowledge-base source added in-app (PDF, YouTube, or link). */
@@ -101,6 +126,10 @@ export interface ReflowState {
   deck?: DeckPlan | null;
   /** Tutor chat thread. */
   chat: ChatMessage[];
+  /** The focus garden — one plant per completed focus session. */
+  garden: Plant[];
+  /** Post-session reflections (the tutor's memory of how sessions went). */
+  reflections: Reflection[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -112,6 +141,7 @@ export function initialState(refDateISO: string): ReflowState {
       weeklyGoalHours: 24,
       slotMinutes: 30,
       examWindowDays: 14,
+      pomodoro: DEFAULT_POMODORO,
     },
     week: { refDateISO, blocks: {} },
     corrections: [],
@@ -121,10 +151,13 @@ export function initialState(refDateISO: string): ReflowState {
     sessionStatus: {},
     deck: null,
     chat: [],
+    garden: [],
+    reflections: [],
     progress: {
-      coins: 240,
-      xp: 320,
-      streakDays: 3,
+      // Honest start — everything is earned, nothing is seeded.
+      coins: 0,
+      xp: 0,
+      streakDays: 0,
       lastStudyDate: null,
       rewards: [
         { id: "yt", label: "30 min YouTube", cost: 60, icon: "📺" },
@@ -148,6 +181,20 @@ export const setWeeklyGoal = (s: ReflowState, hours: number): ReflowState =>
 
 export const setSlotMinutes = (s: ReflowState, slotMinutes: number): ReflowState =>
   withConfig(s, { slotMinutes });
+
+export const setPomodoro = (s: ReflowState, pomodoro: PomodoroConfig): ReflowState =>
+  withConfig(s, { pomodoro });
+
+/** Add a plant to the garden (one per completed focus session); kind cycles. */
+export function addPlant(s: ReflowState, subjectId: string | undefined, date: string): ReflowState {
+  const kind = GARDEN_KINDS[s.garden.length % GARDEN_KINDS.length]!;
+  return { ...s, garden: [...s.garden, { id: `${s.garden.length + 1}-${date}`, kind, subjectId, date }] };
+}
+
+/** Append a post-session reflection (newest first). */
+export function addReflection(s: ReflowState, r: Reflection): ReflowState {
+  return { ...s, reflections: [r, ...s.reflections] };
+}
 
 export function addSubject(s: ReflowState, subject: StudySubject): ReflowState {
   if (s.config.subjects.some((x) => x.id === subject.id)) return s;
@@ -451,6 +498,13 @@ export function studentModel(s: ReflowState) {
 
   const corrections = s.corrections.filter((c) => !c.reviewed).length;
 
+  // The tutor's memory: the student's most recent spoken/typed reflections.
+  const recentReflections = s.reflections.slice(0, 6).map((r) => ({
+    subject: r.subjectId ? (s.config.subjects.find((x) => x.id === r.subjectId)?.name ?? null) : null,
+    date: r.date,
+    note: r.summary ?? r.raw,
+  }));
+
   return {
     subjects,
     weeklyGoalHours: s.config.weeklyGoalHours,
@@ -462,6 +516,8 @@ export function studentModel(s: ReflowState) {
     },
     corrections,
     focusMinutesThisWeek,
+    gardenPlants: s.garden.length,
+    recentReflections,
   };
 }
 

@@ -4,8 +4,9 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { Interval } from "../engine/types";
 import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
-import type { ChatMessage, Correction, FocusSession, PastPaper, ReflowState, Source } from "./model";
+import type { ChatMessage, Correction, FocusSession, PastPaper, Reflection, ReflowState, Source } from "./model";
 import type { DeckPlan } from "../ui/deck";
+import type { PomodoroConfig } from "../lib/pomodoro";
 import type { RewardItem } from "./rewards";
 
 /** Calendar Monday (YYYY-MM-DD) of the current local week. */
@@ -47,6 +48,9 @@ interface Store {
   setDeck: (deck: DeckPlan | null) => void;
   appendChat: (msg: ChatMessage) => void;
   clearChat: () => void;
+  setPomodoro: (p: PomodoroConfig) => void;
+  addPlant: (subjectId: string | undefined, date: string) => void;
+  addReflection: (r: Reflection) => void;
   reset: () => void;
 }
 
@@ -88,10 +92,13 @@ export const useStore = create<Store>()(
       setDeck: (deck) => set(apply((s) => M.setDeck(s, deck))),
       appendChat: (msg) => set(apply((s) => M.appendChat(s, msg))),
       clearChat: () => set(apply((s) => M.clearChat(s))),
+      setPomodoro: (p) => set(apply((s) => M.setPomodoro(s, p))),
+      addPlant: (subjectId, date) => set(apply((s) => M.addPlant(s, subjectId, date))),
+      addReflection: (r) => set(apply((s) => M.addReflection(s, r))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v8",
+      name: "reflow-state-v9",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {

@@ -19,10 +19,10 @@ describe("Orbit tokens", () => {
   test("light and dark accents differ (system-adaptive, not inverted)", () => {
     expect(palette.light.accent).not.toBe(palette.dark.accent);
   });
-  test("type scale is complete and SF-based (no Fraunces family)", () => {
+  test("type scale is complete and uses the PP Editorial New family", () => {
     for (const k of TYPE_KEYS) {
       expect(type[k], k).toBeDefined();
-      expect((type[k] as any).fontFamily ?? undefined).toBeUndefined();
+      expect((type[k] as any).fontFamily).toMatch(/^PPEditorial/);
     }
   });
   test("subject colours cover all four subjects", () => {

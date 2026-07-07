@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { initialState, markSessionDone, redeemReward, touchStreak } from "./model";
+import { award, initialState, markSessionDone, redeemReward, touchStreak } from "./model";
 import { EARN, levelForXp, levelProgress } from "./rewards";
 
 const REF = "2027-04-25";
@@ -36,10 +36,11 @@ describe("reward economy", () => {
   });
 
   test("redeeming a reward spends coins only when affordable", () => {
-    const s0 = initialState(REF); // 240 coins, has a 300-cost "Film night"
-    const tooDear = redeemReward(s0, "film", REF);
+    // Honest start = 0 coins; earn some first, then redeem.
+    const s0 = award(initialState(REF), 150, 0, "test grant", REF); // 150 coins
+    const tooDear = redeemReward(s0, "film", REF); // 300 > 150 → blocked
     expect(tooDear.progress.coins).toBe(s0.progress.coins); // unchanged
-    const ok = redeemReward(s0, "game", REF); // 120
+    const ok = redeemReward(s0, "game", REF); // 120 ≤ 150 → spent
     expect(ok.progress.coins).toBe(s0.progress.coins - 120);
     expect(ok.progress.ledger[0]).toMatchObject({ kind: "spend", amount: 120 });
   });
