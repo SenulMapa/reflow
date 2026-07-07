@@ -105,6 +105,13 @@ export default function ThisWeek() {
             <Text style={[type.largeTitle, { color: colors.text }]}>This Week</Text>
           </View>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
+            <Link href="/practice" asChild>
+              <Pressable hitSlop={10}>
+              <View style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
+                <Text style={{ fontSize: 18 }}>✏️</Text>
+              </View>
+            </Pressable>
+            </Link>
             <Link href="/timer" asChild>
               <Pressable hitSlop={10}>
               <View style={[styles.iconBtn, { backgroundColor: colors.surface }]}>
