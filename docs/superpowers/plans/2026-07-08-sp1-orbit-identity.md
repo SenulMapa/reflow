@@ -21,9 +21,20 @@
 
 ---
 
+## Premium polish (baked in, per `mobile-app-premium-polish`)
+
+SP1 establishes the reusable polish primitives and applies the audit checklist to Home. Levers active in SP1: **press physics** (`PressableScale`), **disciplined animation** (deck entrance fade, ring fill-on-mount), **haptics** (`selection`/`success` presets), and **empty/loading states** (orbit "not started", garden invitation, `Skeleton`). Keyboard lever is dev-build-only → deferred to SP3/SP5/SP7.
+
+Expo-bundled, Expo-Go-compatible deps added via `npx expo install`: `react-native-svg`, `react-native-reanimated`, `expo-haptics`. (`react-native-gesture-handler` is deferred to SP3 — the first real swipe/drag gesture; `react-native-keyboard-controller` needs the native build.) `PressableScale` needs only Reanimated: `Pressable` already fires `onPressOut` on drag-off, so the spring reverses on cancel.
+
 ## File Structure
 
-- `package.json` — add `react-native-svg` dependency (via `npx expo install`).
+- `package.json` — add `react-native-svg`, `react-native-reanimated`, `expo-haptics` (all via `npx expo install`).
+- `babel.config.js` — add `react-native-reanimated/plugin` (must be LAST in the plugins list).
+- `src/components/PressableScale.tsx` — **create**. Reanimated spring press-scale wrapper; drop-in for `Pressable`.
+- `src/lib/haptics.ts` — **create**. `selection()`/`success()`/`light()` presets over `expo-haptics` (no-op on web).
+- `src/components/Skeleton.tsx` — **create**. Shimmer placeholder block for LLM/network waits (used from SP4+).
+- `src/components/FadeInView.tsx` — **create**. Mount fade+rise wrapper for the deck entrance.
 - `src/theme/tokens.ts` — **rewrite** to Orbit tokens (light+dark values, SF type scale, subject colours). Same keys.
 - `src/theme/tokens.test.ts` — **create**. Contract test: both themes expose every colour key; type scale complete.
 - `src/theme/theme.ts` — unchanged API; verify it still resolves the rewritten palette.
@@ -1012,6 +1023,221 @@ git commit -m "feat(sp1): CardDeck renderer + Home re-skinned as tutor fallback 
 
 ---
 
+## Task 7: Premium polish pass (press physics · haptics · entrance · ring fill)
+
+Applies the `mobile-app-premium-polish` levers to the Home screen built in Tasks 1–6, and leaves reusable primitives for later SPs.
+
+**Files:**
+- Modify: `package.json` (add `react-native-reanimated`, `expo-haptics`)
+- Modify: `babel.config.js` (append `react-native-reanimated/plugin` last)
+- Create: `src/components/PressableScale.tsx`
+- Create: `src/lib/haptics.ts`
+- Create: `src/components/FadeInView.tsx`
+- Create: `src/components/Skeleton.tsx`
+- Modify: `src/components/OrbitRing.tsx` (animate ring fill on mount)
+- Modify: `app/index.tsx` (wrap deck in `FadeInView`; `do_next`/`reflect` → `PressableScale` + haptics)
+
+**Interfaces:**
+- Consumes: Reanimated, `expo-haptics`; components from Tasks 4–6.
+- Produces:
+  - `PressableScale(props: PressableProps & { scaleTo?: number; haptic?: "selection"|"success"|"light"|false })` — press-scale wrapper.
+  - `haptics.selection()` / `haptics.success()` / `haptics.light()` — no-throw, no-op on web.
+  - `FadeInView(props: { children: ReactNode; delay?: number; style?: ViewStyle })`.
+  - `Skeleton(props: { width?: number|string; height?: number; radius?: number })` (used SP4+).
+  - `AnimatedOrbitRing` behavior: ring animates `strokeDashoffset` from `circumference`→target over ~700ms on mount.
+
+- [ ] **Step 1: Install Reanimated + haptics (Expo-pinned)**
+
+Run: `cd ~/reflow && npx expo install react-native-reanimated expo-haptics`
+Expected: both pinned to SDK-54-compatible versions; no peer errors.
+
+- [ ] **Step 2: Add the Reanimated Babel plugin (must be last)**
+
+Edit `babel.config.js` — append the plugin as the FINAL entry of the `plugins` array (after the import-meta shim):
+
+```js
+    plugins: [
+      function transformImportMetaShim() {
+        return {
+          name: "transform-import-meta-shim",
+          visitor: {
+            MetaProperty(path) {
+              path.replaceWithSourceString("({})");
+            },
+          },
+        };
+      },
+      "react-native-reanimated/plugin", // MUST be last
+    ],
+```
+
+Then clear Metro cache on next start (`npx expo start -c`).
+
+- [ ] **Step 3: Create `src/lib/haptics.ts`**
+
+```ts
+import { Platform } from "react-native";
+import * as Haptics from "expo-haptics";
+
+/** Consistent haptic presets. No-throw; silently no-ops on web. */
+const safe = (fn: () => Promise<void>) => {
+  if (Platform.OS === "web") return;
+  fn().catch(() => {});
+};
+
+export const haptics = {
+  selection: () => safe(() => Haptics.selectionAsync()),
+  success: () => safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
+  light: () => safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
+};
+```
+
+- [ ] **Step 4: Create `src/components/PressableScale.tsx`**
+
+```tsx
+import { Pressable, type PressableProps } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { haptics } from "../lib/haptics";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** Drop-in Pressable with a spring scale-down on press-in that reverses on
+ *  release OR cancel (Pressable fires onPressOut on drag-off). Fires a haptic
+ *  on press-in by default. */
+export function PressableScale({
+  scaleTo = 0.97, haptic = "selection", onPressIn, onPressOut, style, children, ...rest
+}: PressableProps & { scaleTo?: number; haptic?: "selection" | "success" | "light" | false }) {
+  const s = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: s.value }] }));
+  return (
+    <AnimatedPressable
+      onPressIn={(e) => { s.value = withSpring(scaleTo, { damping: 18, stiffness: 320 }); if (haptic) haptics[haptic](); onPressIn?.(e); }}
+      onPressOut={(e) => { s.value = withSpring(1, { damping: 18, stiffness: 320 }); onPressOut?.(e); }}
+      style={[anim, style as any]}
+      {...rest}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
+```
+
+- [ ] **Step 5: Create `src/components/FadeInView.tsx`**
+
+```tsx
+import { type ReactNode } from "react";
+import { type ViewStyle } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+
+/** Subtle mount entrance: fade + short rise. One orchestrated moment, not scattered. */
+export function FadeInView({ children, delay = 0, style }: { children: ReactNode; delay?: number; style?: ViewStyle }) {
+  return (
+    <Animated.View entering={FadeInDown.duration(420).delay(delay)} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
+```
+
+- [ ] **Step 6: Create `src/components/Skeleton.tsx`**
+
+```tsx
+import { useEffect } from "react";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming, cancelAnimation } from "react-native-reanimated";
+import { useTheme } from "../theme/theme";
+import { radius as R } from "../theme/tokens";
+
+/** Shimmer placeholder for AI/network waits (used from SP4). Pairs with status copy. */
+export function Skeleton({ width = "100%", height = 16, radius = R.sm }: { width?: number | string; height?: number; radius?: number }) {
+  const { colors } = useTheme();
+  const o = useSharedValue(0.4);
+  useEffect(() => {
+    o.value = withRepeat(withTiming(0.85, { duration: 700 }), -1, true);
+    return () => cancelAnimation(o);
+  }, [o]);
+  const anim = useAnimatedStyle(() => ({ opacity: o.value }));
+  return <Animated.View style={[{ width: width as any, height, borderRadius: radius, backgroundColor: colors.separator }, anim]} />;
+}
+```
+
+- [ ] **Step 7: Animate the ring fill in `OrbitRing.tsx`**
+
+Replace the filled `<Circle>` (the coloured coverage arc) with an animated one. Add these imports at the top of `src/components/OrbitRing.tsx`:
+
+```tsx
+import { useEffect } from "react";
+import Animated, { useAnimatedProps, useSharedValue, withTiming } from "react-native-reanimated";
+```
+
+Add below the existing `Svg`/`Circle` import:
+
+```tsx
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+```
+
+Inside the component, after computing `{ circumference, dashOffset }`, add:
+
+```tsx
+  const dash = useSharedValue(circumference); // start empty
+  useEffect(() => { dash.value = withTiming(dashOffset, { duration: 700 }); }, [dashOffset, dash]);
+  const arcProps = useAnimatedProps(() => ({ strokeDashoffset: dash.value }));
+```
+
+Then replace the coloured coverage `<Circle ... strokeDashoffset={dashOffset} ... />` with:
+
+```tsx
+          <AnimatedCircle
+            cx={c} cy={c} r={r} stroke={color} strokeWidth={stroke} fill="none"
+            strokeLinecap="round" strokeDasharray={circumference} animatedProps={arcProps}
+            transform={`rotate(-90 ${c} ${c})`}
+          />
+```
+
+(The grey track `<Circle>` and the marker `<Circle>` are unchanged.)
+
+- [ ] **Step 8: Wire polish into `app/index.tsx`**
+
+Add imports:
+
+```tsx
+import { PressableScale } from "../src/components/PressableScale";
+import { FadeInView } from "../src/components/FadeInView";
+import { haptics } from "../src/lib/haptics";
+```
+
+Change the `do_next` slot's `<Pressable ...>` to `<PressableScale haptic="light" ...>` (same style prop), and the `reflect_cta` slot's `<Pressable ...>` to `<PressableScale ...>`. Wrap the deck render:
+
+```tsx
+        <FadeInView>
+          <CardDeck plan={deck} slots={slots} />
+        </FadeInView>
+```
+
+Leave the two reward pills as plain `Pressable` for now (they become live in SP2); the coin pill's `Link`→`PressableScale` upgrade also lands in SP2.
+
+- [ ] **Step 9: Typecheck + tests**
+
+Run: `npm run typecheck && npm test`
+Expected: `tsc` clean; all tests PASS (no test files touched by this task).
+
+- [ ] **Step 10: Visual verify + polish audit (local)**
+
+Run: `cd ~/reflow && npx expo export -p web && python3 -m http.server 8091 --directory ~/reflow/dist &`
+Drive local Chromium against `http://localhost:8091`. Confirm and record:
+- Deck fades/rises in on load (not a hard pop).
+- Orbit rings visibly animate from empty → their arc on mount.
+- `do_next` and `reflect` cards scale down on press and spring back on release (web shows the scale; haptics are native-only).
+Then walk the skill's audit checklist for Home: press states ✓, animation tied to state ✓ (entrance + fill only, nothing decorative), haptics on key taps ✓, empty states ✓ (orbit "not started", garden invitation), loading — N/A on Home (no async yet; `Skeleton` ready for SP4). Kill server: `pkill -f "http.server 8091"`.
+
+- [ ] **Step 11: Commit**
+
+```bash
+git add package.json package-lock.json babel.config.js src/components/PressableScale.tsx src/components/FadeInView.tsx src/components/Skeleton.tsx src/lib/haptics.ts src/components/OrbitRing.tsx app/index.tsx
+git commit -m "feat(sp1): premium polish — press physics, haptics, entrance + ring-fill animation"
+```
+
+---
+
 ## Self-Review (author checklist — completed)
 
 **Spec coverage (SP1 scope):**
@@ -1021,6 +1247,7 @@ git commit -m "feat(sp1): CardDeck renderer + Home re-skinned as tutor fallback 
 - `Ridge`, `CoachCard`, `CardDeck` with fallback deck, garden glyphs → Tasks 3+5+6. ✅
 - Home renders a *static fallback deck bound to live data* (tutor `plan_deck` is SP4) → Task 6. ✅
 - Coverage shown countdown-only until real data exists (honest; SP2/SP3 fill it) → OrbitRing `coverage?` undefined path. ✅
+- Premium polish standard (press physics, disciplined animation, haptics, empty/loading states) → Task 7 + `PressableScale`/`haptics`/`FadeInView`/`Skeleton` primitives; audit checklist run on Home. Keyboard lever correctly deferred (dev-build only). ✅
 
 **Placeholder scan:** two intentional typo-guards flagged inline (empty `<Text/>` loop in Ridge Step 1→removed Step 2; stray `未` in CardDeck comment→removed Step 1). No "TBD/handle edge cases" left. ✅
 

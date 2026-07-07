@@ -52,6 +52,18 @@ SF Pro (native iOS, matches the Weather ref): heavy tight display for orbit numb
 ### Motion
 Deliberate, minimal: garden sprout sways while a session runs; ring fills animate on load; reflect-mic pulse while recording. All respect `prefers-reduced-motion`.
 
+### Premium polish standard (cross-cutting — every SP honors this)
+
+Per the `mobile-app-premium-polish` skill, "premium" is a stack of small interaction details applied *while* building, not a final coat. Five levers, each with its home in the build:
+
+1. **Press & spring physics** — no bare `Pressable`. Every tappable card/button uses a shared `PressableScale` (Reanimated spring scale-down on press-in, cancels cleanly if the finger drags off). Lands in **SP1** as a primitive, used everywhere after.
+2. **Disciplined animation** — animate *less*, precisely on state change: deck entrance fade-in on load, the orbit ring filling from empty→coverage on mount, cross-fade on session tick/done, toast for coin earns. No decorative motion. Native iOS zoom transitions via Expo Router where free. SP1 (entrance + ring fill); more per feature.
+3. **Haptics** — a small presets module over `expo-haptics` (`selection`/`success`/`light`), fired alongside existing visual state changes only (do-next tap, session complete, reward redeem, reflection saved). Consistent patterns, not ad-hoc. Primitive in **SP1**; wired as features land.
+4. **Keyboard behavior** — text screens (reflect-typed-fallback, Practice, tutor chat) auto-focus, resize around the keyboard, support swipe-to-dismiss, and grow multi-line inputs. `react-native-keyboard-controller` — **dev-build only (not Expo Go)**, so this lever lands with SP3/SP5/SP7 on the AltStore build; graceful `KeyboardAvoidingView` fallback in Expo Go.
+5. **Loading & empty states** — no blank/spinner screens. LLM waits (deck plan, quiz, distillation) show a **shimmer/skeleton + one-line status**, never a bare spinner; every empty screen is an invitation with icon + next action; OS permission prompts (mic) get a **soft-ask** screen first. Skeleton primitive in SP1; soft-ask with the mic permission in SP3.
+
+Each SP's verification includes the skill's audit checklist for any screen it touches.
+
 ---
 
 ## 2. The tutor-driven dashboard (card deck)
