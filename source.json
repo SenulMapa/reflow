@@ -1,0 +1,33 @@
+{
+  "name": "Reflow",
+  "identifier": "com.senul.reflow.source",
+  "subtitle": "Ace your A-Levels — your study brain + AI tutor.",
+  "apps": [
+    {
+      "name": "Reflow",
+      "bundleIdentifier": "com.senul.reflow",
+      "developerName": "Senul Mapa",
+      "subtitle": "Your A-Level study brain, with an AI tutor.",
+      "localizedDescription": "Reflow derives your weekly study hours from live signals and reflows them around your life, with an AI tutor that arranges your day, a focus garden, and a coin economy for guilt-free rewards.",
+      "iconURL": "https://raw.githubusercontent.com/SenulMapa/reflow/main/assets/icon.png",
+      "tintColor": "D9541E",
+      "category": "education",
+      "version": "1.0.0",
+      "versionDate": "2026-07-07",
+      "versionDescription": "Build from 2026-07-07",
+      "downloadURL": "https://github.com/SenulMapa/reflow/releases/download/v1.0.0-20260707224115/Reflow.ipa",
+      "size": 13473894,
+      "minOSVersion": "16.0",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "date": "2026-07-07",
+          "localizedDescription": "Build from 2026-07-07",
+          "downloadURL": "https://github.com/SenulMapa/reflow/releases/download/v1.0.0-20260707224115/Reflow.ipa",
+          "size": 13473894,
+          "minOSVersion": "16.0"
+        }
+      ]
+    }
+  ]
+}
