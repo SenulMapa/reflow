@@ -84,6 +84,15 @@ export default function Setup() {
           </Pressable>
         </Link>
 
+        <Link href="/sources" asChild>
+          <Pressable>
+            <Surface style={[styles.row, { marginTop: spacing.sm }]}>
+              <Text style={[type.headline, { color: colors.text, flex: 1 }]}>Knowledge Base</Text>
+              <Text style={[type.headline, { color: colors.accent }]}>Sources ›</Text>
+            </Surface>
+          </Pressable>
+        </Link>
+
         {/* Subjects */}
         <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.xl, marginBottom: spacing.sm }]}>
           SUBJECTS · confidence drives the split

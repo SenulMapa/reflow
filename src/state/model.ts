@@ -57,12 +57,32 @@ export interface FocusSession {
   minutes: number;
 }
 
+/** A knowledge-base source added in-app (PDF, YouTube, or link). */
+export interface Source {
+  id: string;
+  type: "pdf" | "youtube" | "link";
+  title: string;
+  uri: string;
+  subjectId?: string;
+  addedDate: string;
+  /** True once the box's RAG pipeline has ingested it (false = pending). */
+  ingested: boolean;
+}
+
+/** Classify a URL/URI into a source type. */
+export function classifySource(uri: string): Source["type"] {
+  if (/youtube\.com|youtu\.be/i.test(uri)) return "youtube";
+  if (/\.pdf($|\?)/i.test(uri) || uri.startsWith("file:")) return "pdf";
+  return "link";
+}
+
 export interface ReflowState {
   config: ReflowConfig;
   week: WeekState;
   corrections: Correction[];
   pastPapers: PastPaper[];
   focusSessions: FocusSession[];
+  sources: Source[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -79,6 +99,7 @@ export function initialState(refDateISO: string): ReflowState {
     corrections: [],
     pastPapers: [],
     focusSessions: [],
+    sources: [],
   };
 }
 
@@ -239,6 +260,17 @@ export function addFocusSession(s: ReflowState, session: FocusSession): ReflowSt
 export function focusMinutesOn(s: ReflowState, date: string): number {
   return s.focusSessions.filter((f) => f.date === date).reduce((t, f) => t + f.minutes, 0);
 }
+
+// ── Knowledge-base sources (Phase 5 / KB) ───────────────────────────────────
+
+export function addSource(s: ReflowState, source: Source): ReflowState {
+  return { ...s, sources: [source, ...s.sources] };
+}
+
+export const removeSource = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  sources: s.sources.filter((x) => x.id !== id),
+});
 
 // ── Selector ────────────────────────────────────────────────────────────────
 
