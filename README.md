@@ -1,67 +1,69 @@
 # Reflow
 
-A personal study scheduler whose brain **derives** how many hours each subject gets this week — from days-to-exam, topic confidence, and past-paper performance — then **reflows** those hours around your fixed commitments and ad-hoc life ("dinner tonight 6–8"), keeping your weekly budget met. Built for Edexcel/Cambridge IAL.
+Your A-Level study brain — with an AI tutor.
 
-Expo SDK 54 (React Native) · offline-first · MiniMax-powered (swappable) · self-hosted Supabase.
+Reflow **derives** your weekly study hours per subject from live signals (days-to-exam,
+per-topic confidence, past-paper performance) and **reflows** them around your life. Around
+that scheduling engine sits an **AI tutor** that arranges your dashboard, answers questions
+grounded in the IAL spec, and learns how you study from post-session reflections — plus a
+**focus garden** and a **coin economy** that turns leisure into a guilt-free reward.
 
-## Screens (verified rendering, headless browser)
+Built with Expo (SDK 56) + React Native. The scheduling engine is pure, zero-I/O TypeScript
+(fully unit-tested). LLM = MiniMax, behind a swappable proxy.
 
-| This Week (with reflow) | Insights | Correction Booklet |
-|---|---|---|
-| ![](docs/screenshots/this-week.png) | ![](docs/screenshots/insights.png) | ![](docs/screenshots/correction-booklet.png) |
+## Install on your iPhone (SideStore / AltStore)
 
-| Setup | Focus Timer |
-|---|---|
-| ![](docs/screenshots/setup.png) | ![](docs/screenshots/timer.png) |
+Add this source in SideStore → Sources → **＋**:
 
-The This Week shot shows the core feature live: typing *"monday 5-7 gym"* blocked that slot and the week reflowed around it (Undo offered), keeping the weekly budget.
+```
+https://raw.githubusercontent.com/SenulMapa/reflow/main/source.json
+```
 
-## Run
+Then install **Reflow** from that source. New JS-only updates arrive over-the-air (no reinstall);
+you only reinstall when there's a new native build.
+
+> `source.json` is generated automatically by CI on the first native build. If the link 404s,
+> the first `Build iOS IPA` workflow hasn't finished yet.
+
+## Development
 
 ```bash
 npm install
-npm test              # vitest — engine + state (48 tests)
-npm run typecheck     # tsc --noEmit
-npx expo start        # run on device/simulator (Expo Go or dev build)
-npx expo export -p web  # bundle check
+npx expo start          # scan the QR with Expo Go (JS-only features)
+npm test                # vitest — engine + state (pure TS)
+npx tsc --noEmit        # type gate
+npx expo export -p web  # web bundle (used for visual verification)
 ```
 
-## Architecture
+## Shipping — the OTA discipline (mirrors the Tani pipeline)
 
-- **`src/engine/`** — pure, zero-I/O TypeScript scheduling engine (runs on-device *and* server-side for Siri):
-  - `intervals` free-window math · `allocator/` derives per-subject hours (`weighting.ts` = the tunable heuristic) · `placer/` slot-aligned, anchor-safe placement · `week.ts` `planWeek` + `reflow` (add/remove diff for undo). Fully unit-tested & adversarially hardened.
-- **`src/state/`** — pure reducers (`model.ts`) + persistent store (`store.ts`, zustand + AsyncStorage). The closed loop: metrics (confidence, past-paper scores, focus) → allocator → schedule.
-- **`src/lib/`** — `buildWeek` (subjects + IAL timetable → engine input), `parseBlock` (deterministic NL → block), `blockEntry` (local-first, MiniMax fallback), `pomodoro`, `llm` (proxy client).
-- **`app/`** — expo-router screens: This Week · Setup · Correction Booklet · Insights · Timer.
-- **`src/theme/` + `src/components/Surface.tsx`** — iOS-26 design system; `Surface` is the single Liquid-Glass swap point (SDK 56).
-- **`supabase/functions/llm/`** — the swappable MiniMax proxy (deploy when the box is up).
+**Most changes ship over-the-air. Native builds are rare and expensive — don't waste them.**
 
-## Status
+- **JS-only change** (a screen, a fetch, styling, copy): ship it OTA, no build.
+  ```bash
+  eas update --channel production --message "what changed"
+  ```
+- **Native change** (deps that touch native, anything in `app.json` / `eas.json` / `ios/` /
+  `android/` / `plugins/`): push to `main` — `.github/workflows/build-ios.yml` builds an
+  unsigned IPA, publishes a GitHub Release, and updates `source.json`. It is **path-filtered**,
+  so a JS-only push never triggers a build.
 
-| Phase | State |
-|---|---|
-| Engine | ✅ complete, hardened, tested |
-| 1 — brain → UI (NL blocks, persistence, setup) | ✅ |
-| 2 — weakness loop (topics + Correction Booklet) | ✅ |
-| 3 — trackers + performance signal + Insights | ✅ |
-| 4 — focus/pomodoro timer + metrics | ✅ (AI quizzes/Feynman: code ready, needs MiniMax key) |
-| 0 — infra (box Supabase sync, deploy `/llm`) | ⏳ needs box SSH + MiniMax key |
-| 5 — library, NotebookLM, Liquid Glass | ⏳ needs box Storage / `notebooklm-py` / SDK 56 + Mac |
-| 6 — Siri App Intents | ⏳ needs Mac/AltStore signing |
-| KB — IAL RAG grounding | ⏳ needs official source PDFs |
+**Invariants that keep OTA working (do not break these):**
 
-## Backend — `/llm` proxy (deployed)
+1. `app.json` → `updates.requestHeaders."expo-channel-name": "production"` must stay — without
+   it the app requests updates with no channel and EAS serves nothing.
+2. `runtimeVersion.policy = "appVersion"` — the runtime version *is* the version string.
+3. **Never bump `version` in `app.json` for a JS-only OTA** — the installed binary would no
+   longer match the OTA bundle and updates go dark. Bump `version` only alongside a new IPA.
 
-The AI proxy is **live on the box**: a tiny Node service (`server/llm/`) holding the MiniMax key, running as container `reflow-llm` on the Caddy network, routed at `https://104-208-72-98.sslip.io/llm` (real Let's Encrypt cert, valid on iOS). Model: `MiniMax-M2` (reasoning model; the proxy strips `<think>` blocks). The app reads `EXPO_PUBLIC_LLM_URL` (see `.env.example`); unset ⇒ fully offline.
+## Project layout
 
-Verify from a real network (your laptop/phone — the endpoint isn't reachable from every host):
-```bash
-curl https://104-208-72-98.sslip.io/llm   # -> {"ok":true,"model":"MiniMax-M2"}
 ```
-
-⚠️ The endpoint is currently **unauthenticated** — fine for personal use, but add a shared-secret header before making it public (it spends the MiniMax key). Redeploy after code changes: `scp server/llm/server.js` to `~/reflow-llm/` on the box, then `cd ~/reflow-llm && sudo docker compose up -d --build`.
-
-## To unblock the rest
-1. **Box**: `ssh -i ~/OpenClaw_key.pem senul@100.86.148.112 -p 2222` → confirm self-hosted Supabase → apply schema + Storage bucket → `supabase functions deploy llm` → set `MINIMAX_API_KEY` (+ verify `MINIMAX_BASE_URL`/`MODEL`) → set `EXPO_PUBLIC_LLM_URL` in the app.
-2. **KB**: drop the official IAL specs / mark schemes / examiner reports / booklets somewhere the ingestion pipeline can read them.
-3. **Device/native**: a Mac (or AltStore pipeline) for the dev build, Siri App Intents, and the SDK 56 Liquid Glass bump.
+app/                 expo-router screens (Home, Tutor, Timer, Reflect, Week, …)
+src/engine/          Allocator + Placer scheduling engine (pure TS, tested)
+src/state/           zustand store + pure reducers (model.ts)
+src/ui/, components/ Orbit ring / deck / chat / markdown / polish primitives
+src/theme/           PP Editorial New type scale + Orbit palette (light/dark)
+server/llm/          MiniMax proxy (chat, plan_deck, quiz, …) — deployed on the box
+docs/superpowers/    design spec + implementation plan
+```
