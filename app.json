@@ -3,7 +3,7 @@
     "name": "Reflow",
     "slug": "reflow",
     "scheme": "reflow",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -33,7 +33,6 @@
       "expo-web-browser",
       "expo-sharing",
       "expo-secure-store",
-      "expo-background-task",
       "expo-notifications",
       "@react-native-community/datetimepicker",
       [
