@@ -7,6 +7,7 @@ import { radius, spacing, subjectColors, type, bounded } from "../src/theme/toke
 import { useStore } from "../src/state/store";
 import { computePlan, sessionKeyOf } from "../src/state/model";
 import { PressableScale } from "../src/components/PressableScale";
+import { VoiceReflectButton } from "../src/components/VoiceReflectButton";
 import { haptics } from "../src/lib/haptics";
 import { fmtTime } from "../src/lib/format";
 
@@ -22,7 +23,7 @@ const todayISO = () => {
 export default function Reflect() {
   const { colors } = useTheme();
   const router = useRouter();
-  const params = useLocalSearchParams<{ subjectId?: string; minutes?: string }>();
+  const params = useLocalSearchParams<{ subjectId?: string; minutes?: string; sessionKey?: string }>();
   const state = useStore((s) => s.state);
   const addReflection = useStore((s) => s.addReflection);
 
@@ -35,7 +36,8 @@ export default function Reflect() {
     [plan, today]
   );
 
-  const [pickedKey, setPickedKey] = useState<string | null>(null);
+  // Seed from the timer handoff: if a scheduled session was just finished, pre-pick it.
+  const [pickedKey, setPickedKey] = useState<string | null>(params.sessionKey || null);
   const [pickedSubject, setPickedSubject] = useState<string | undefined>(params.subjectId || undefined);
   const [text, setText] = useState("");
 
@@ -89,6 +91,13 @@ export default function Reflect() {
               );
             })}
           </View>
+
+          {/* Voice reflection — on-device transcription (native only). */}
+          {Platform.OS !== "web" && (
+            <View style={{ marginTop: spacing.lg }}>
+              <VoiceReflectButton onResult={(t) => setText((prev) => (prev ? `${prev} ${t}` : t))} />
+            </View>
+          )}
 
           {/* Reflection text */}
           <View style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.separator }]}>

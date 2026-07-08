@@ -29,8 +29,11 @@ interface Store {
   removeBlock: (date: string, index: number) => void;
   clearBlocks: () => void;
   setRefDate: (iso: string) => void;
+  reflowWeek: (fromISO: string) => void;
+  clearReflow: () => void;
   addTopic: (subjectId: string, topic: Topic) => void;
   setTopicConfidence: (subjectId: string, topicId: string, confidence: number) => void;
+  applyFeynmanConfidence: (subjectId: string, topicId: string, score10: number) => void;
   addCorrection: (c: Correction) => void;
   toggleCorrectionReviewed: (id: string) => void;
   removeCorrection: (id: string) => void;
@@ -72,9 +75,13 @@ export const useStore = create<Store>()(
       removeBlock: (date, i) => set(apply((s) => M.removeBlock(s, date, i))),
       clearBlocks: () => set(apply((s) => M.clearBlocks(s))),
       setRefDate: (iso) => set(apply((s) => M.setRefDate(s, iso))),
+      reflowWeek: (fromISO) => set(apply((s) => M.reflowWeek(s, fromISO))),
+      clearReflow: () => set(apply((s) => M.clearReflow(s))),
       addTopic: (subjectId, topic) => set(apply((s) => M.addTopic(s, subjectId, topic))),
       setTopicConfidence: (subjectId, topicId, c) =>
         set(apply((s) => M.setTopicConfidence(s, subjectId, topicId, c))),
+      applyFeynmanConfidence: (subjectId, topicId, score10) =>
+        set(apply((s) => M.applyFeynmanConfidence(s, subjectId, topicId, score10))),
       addCorrection: (c) => set(apply((s) => M.addCorrection(s, c))),
       toggleCorrectionReviewed: (id) => set(apply((s) => M.toggleCorrectionReviewed(s, id))),
       removeCorrection: (id) => set(apply((s) => M.removeCorrection(s, id))),
@@ -98,7 +105,7 @@ export const useStore = create<Store>()(
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v9",
+      name: "reflow-state-v10",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {

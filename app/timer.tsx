@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,10 +33,20 @@ export default function Timer() {
   const addPlant = useStore((s) => s.addPlant);
   const setPomodoro = useStore((s) => s.setPomodoro);
   const award = useStore((s) => s.award);
+  const markSessionDone = useStore((s) => s.markSessionDone);
+
+  // Session identity from Home's "Start": which scheduled session this timer is
+  // running. Present ⇒ finishing ticks that calendar session done and threads the
+  // reflection to it. Absent ⇒ a freeform timer (subject still pickable below).
+  const params = useLocalSearchParams<{ sessionKey?: string; subjectId?: string; date?: string; mission?: string }>();
+  const str = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
+  const sessionKey = str(params.sessionKey);
+  const sessionDate = str(params.date);
+  const mission = str(params.mission);
 
   const config = state.config.pomodoro;
   const subjects = state.config.subjects;
-  const [subjectId, setSubjectId] = useState<string | undefined>(undefined);
+  const [subjectId, setSubjectId] = useState<string | undefined>(str(params.subjectId));
   const [phase, setPhase] = useState<Phase>("focus");
   const [running, setRunning] = useState(false);
   const [accum, setAccum] = useState(0);
@@ -62,6 +72,10 @@ export default function Timer() {
       addFocusSession({ id: `${Date.now()}`, subjectId, date: todayISO(), minutes: config.focusMin });
       addPlant(subjectId, todayISO()); // the garden grows
       award(EARN.focus.coins, EARN.focus.xp, "Focus session", todayISO());
+      // Close the loop: tick the scheduled calendar session done (idempotent; also
+      // awards EARN.session + streak) so Home's Now-block advances instead of
+      // re-showing the same "next". Guarded so freeform timers write no bogus key.
+      if (sessionKey) markSessionDone(sessionKey, sessionDate ?? todayISO());
       haptics.success();
       setDone({ minutes: config.focusMin, subjectId });
       setRunning(false);
@@ -113,7 +127,7 @@ export default function Timer() {
           {!wilted && (
             <PressableScale
               haptic="light"
-              onPress={() => router.push({ pathname: "/reflect", params: { subjectId: done.subjectId ?? "", minutes: String(done.minutes) } })}
+              onPress={() => router.push({ pathname: "/reflect", params: { subjectId: done.subjectId ?? "", minutes: String(done.minutes), sessionKey: sessionKey ?? "" } })}
               style={[styles.doneCta, { backgroundColor: colors.accent }]}
             >
               <Text style={[type.headline, { color: "#fff" }]}>Reflect on this session</Text>
@@ -139,6 +153,11 @@ export default function Timer() {
 
         <View style={styles.center}>
           <Text style={[type.caption, { color: accent }]}>{phase === "focus" ? "FOCUS" : "BREAK"}</Text>
+          {mission && phase === "focus" && (
+            <Text style={[type.footnote, { color: colors.textDim, textAlign: "center", paddingHorizontal: spacing.lg }]} numberOfLines={1}>
+              {mission}
+            </Text>
+          )}
           <Text style={{ fontSize: 30, marginTop: 2 }}>{running && phase === "focus" ? growthGlyph : "🪴"}</Text>
           <Text style={[styles.count, { color: colors.text }]}>{fmtCountdown(remaining)}</Text>
 

@@ -1,11 +1,13 @@
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { palette } from "../src/theme/tokens";
+import { configureNotifications } from "../src/lib/notify";
 
 export default function RootLayout() {
   // PP Editorial New — the whole app's editorial voice. Family keys must match
@@ -16,6 +18,9 @@ export default function RootLayout() {
     PPEditorialUltralight: require("../assets/fonts/PPEditorialNew-Ultralight.otf"),
     PPEditorialUltralightItalic: require("../assets/fonts/PPEditorialNew-UltralightItalic.otf"),
   });
+
+  // Configure local notifications once at boot (no-op on web).
+  useEffect(() => { configureNotifications(); }, []);
 
   if (!loaded) return <View style={{ flex: 1, backgroundColor: palette.light.bg }} />;
 

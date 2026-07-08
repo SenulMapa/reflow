@@ -9,6 +9,8 @@ import {
 import { DEMO_SUBJECTS, type StudySubject, type Topic } from "../data/subjects";
 import { EARN, levelForXp, type Progress, type RewardItem } from "./rewards";
 import { DEFAULT_POMODORO, type PomodoroConfig } from "../lib/pomodoro";
+import { nudgeConfidence } from "../lib/signals";
+import { reflowRemaining } from "../lib/selfHeal";
 import type { DeckPlan } from "../ui/deck";
 
 /**
@@ -30,6 +32,8 @@ export interface WeekState {
   refDateISO: string;
   /** One-off blocks keyed by exact date (YYYY-MM-DD). */
   blocks: Record<string, Interval[]>;
+  /** When set, the plan self-heals: remaining goal re-fits from this date onward. */
+  reflowedFromISO?: string;
 }
 
 /** A Correction Booklet entry — a logged mistake + its fix, tied to a topic. */
@@ -281,6 +285,21 @@ function topicConfidence(s: ReflowState, subjectId: string, topicId: string): nu
     ?.topics?.find((t) => t.id === topicId)?.confidence;
 }
 
+/**
+ * The auto signal loop: a Feynman self-explanation grade (0..10) nudges the
+ * topic's confidence toward it (gentle EMA), so practising updates the model
+ * that drives the allocator + readiness — no manual confidence tweaking.
+ */
+export function applyFeynmanConfidence(
+  s: ReflowState,
+  subjectId: string,
+  topicId: string,
+  score10: number
+): ReflowState {
+  const cur = topicConfidence(s, subjectId, topicId) ?? 5;
+  return setTopicConfidence(s, subjectId, topicId, nudgeConfidence(cur, score10));
+}
+
 /** Log a correction; if tied to a topic, drop that topic's confidence by 1. */
 export function addCorrection(s: ReflowState, correction: Correction): ReflowState {
   const lowered = correction.topicId
@@ -454,19 +473,35 @@ export function redeemReward(s: ReflowState, id: string, date: string): ReflowSt
 
 export function computePlan(s: ReflowState): WeekPlan {
   const { config, week } = s;
-  return planWeek(
-    buildWeekInput({
-      refDateISO: week.refDateISO,
-      subjects: config.subjects,
-      availability: config.availability,
-      commitments: config.commitments,
-      blocks: week.blocks,
-      performance: performanceMap(s),
-      weeklyGoalHours: config.weeklyGoalHours,
-      slotMinutes: config.slotMinutes,
-      examWindowDays: config.examWindowDays,
-    })
-  );
+  let input = buildWeekInput({
+    refDateISO: week.refDateISO,
+    subjects: config.subjects,
+    availability: config.availability,
+    commitments: config.commitments,
+    blocks: week.blocks,
+    performance: performanceMap(s),
+    weeklyGoalHours: config.weeklyGoalHours,
+    slotMinutes: config.slotMinutes,
+    examWindowDays: config.examWindowDays,
+  });
+  // Self-heal: if the student reflowed, re-fit only the remaining goal (minus
+  // hours already banked this week) into the days from the reflow date onward.
+  if (week.reflowedFromISO) {
+    const banked = input.days.reduce((t, d) => t + focusMinutesOn(s, d.date), 0) / 60;
+    input = reflowRemaining(input, week.reflowedFromISO, banked);
+  }
+  return planWeek(input);
+}
+
+/** Turn on self-healing from a given day (the plan re-fits remaining hours forward). */
+export function reflowWeek(s: ReflowState, fromISO: string): ReflowState {
+  return { ...s, week: { ...s.week, reflowedFromISO: fromISO } };
+}
+
+/** Undo self-healing — restore the full even-week plan. */
+export function clearReflow(s: ReflowState): ReflowState {
+  const { reflowedFromISO, ...week } = s.week;
+  return { ...s, week };
 }
 
 /**

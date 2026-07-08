@@ -1,12 +1,11 @@
-import { Link } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Surface } from "../src/components/Surface";
-import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
-import { useStore } from "../src/state/store";
-import { generate, isLLMConfigured } from "../src/lib/llm";
+import { Surface } from "../../src/components/Surface";
+import { useTheme } from "../../src/theme/theme";
+import { radius, spacing, subjectColors, type } from "../../src/theme/tokens";
+import { useStore } from "../../src/state/store";
+import { generate, isLLMConfigured } from "../../src/lib/llm";
 
 type Mode = "quiz" | "feynman";
 interface QuizResp { questions: { q: string; answer: string; markscheme: string }[] }
@@ -16,6 +15,7 @@ export default function Practice() {
   const { colors } = useTheme();
   const state = useStore((s) => s.state);
   const addCorrection = useStore((s) => s.addCorrection);
+  const applyFeynmanConfidence = useStore((s) => s.applyFeynmanConfidence);
 
   const subjects = state.config.subjects;
   const [mode, setMode] = useState<Mode>("quiz");
@@ -54,6 +54,9 @@ export default function Practice() {
     try {
       const r = await generate<FeynmanResp>("grade_feynman", { topic: topicName ?? subject?.name, explanation });
       setFeynman(r);
+      // Auto signal loop: the grade nudges this topic's confidence, feeding the
+      // allocator + readiness — studying IS the data entry, no manual tweaking.
+      if (typeof r?.score === "number" && topicId) applyFeynmanConfidence(subjectId, topicId, r.score);
     } catch (e) { setError(String(e instanceof Error ? e.message : e)); }
     finally { setLoading(false); }
   }
@@ -65,7 +68,6 @@ export default function Practice() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Link href="/" asChild><Pressable hitSlop={10}><Text style={[type.headline, { color: colors.accent }]}>‹ Week</Text></Pressable></Link>
         <Text style={[type.largeTitle, { color: colors.text }]}>Practice</Text>
 
         {!configured && (

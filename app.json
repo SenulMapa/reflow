@@ -7,7 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.senul.reflow"
@@ -30,14 +29,39 @@
       "expo-router",
       "expo-font",
       "expo-status-bar",
-      "expo-updates"
+      "expo-updates",
+      "expo-web-browser",
+      "expo-sharing",
+      "expo-secure-store",
+      "expo-background-task",
+      "expo-notifications",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Reflow uses the microphone so you can speak your reflections instead of typing them."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Reflow lets you attach photos of past papers and notes to your study log.",
+          "cameraPermission": "Reflow lets you snap a past paper or worked solution to attach to your study log."
+        }
+      ],
+      [
+        "expo-image",
+        {
+          "photosPermission": "Reflow can save study images to your library."
+        }
+      ],
+      "expo-asset"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/5e3ec5c8-fdd2-4954-8677-8793e10e2f75",
-      "channel": "production",
       "requestHeaders": {
         "expo-channel-name": "production"
       }

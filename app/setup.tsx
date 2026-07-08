@@ -1,12 +1,15 @@
 import { Link } from "expo-router";
+import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
+import { computePlan } from "../src/state/model";
 import { effectiveConfidence } from "../src/data/subjects";
 import { fmtHours } from "../src/lib/format";
+import { syncSessionReminders } from "../src/lib/notify";
 
 /** Subjects available to add (beyond whatever is already configured). */
 const CATALOG = [
@@ -50,6 +53,14 @@ export default function Setup() {
   const configured = new Set(state.config.subjects.map((s) => s.id));
   const addable = CATALOG.filter((c) => !configured.has(c.id));
 
+  const nameById = Object.fromEntries(state.config.subjects.map((s) => [s.id, s.name]));
+  const [remStatus, setRemStatus] = useState<string>("Ping me before each session");
+  async function enableReminders() {
+    setRemStatus("Enabling…");
+    const n = await syncSessionReminders(computePlan(state).sessions, (id) => nameById[id] ?? id, { prompt: true });
+    setRemStatus(n > 0 ? `On · ${n} reminder${n === 1 ? "" : "s"} scheduled` : "Not available on this device");
+  }
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -92,6 +103,16 @@ export default function Setup() {
             </Surface>
           </Pressable>
         </Link>
+
+        <Pressable onPress={enableReminders}>
+          <Surface style={[styles.row, { marginTop: spacing.sm }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[type.headline, { color: colors.text }]}>Session reminders</Text>
+              <Text style={[type.footnote, { color: colors.textDim }]}>{remStatus}</Text>
+            </View>
+            <Text style={[type.headline, { color: colors.accent }]}>Enable ›</Text>
+          </Surface>
+        </Pressable>
 
         {/* Subjects */}
         <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.xl, marginBottom: spacing.sm }]}>

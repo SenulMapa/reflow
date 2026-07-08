@@ -2,14 +2,14 @@ import { Link } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Surface } from "../src/components/Surface";
-import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
-import { computePlan, sessionKeyOf, unreviewedCorrections, weakestTopic } from "../src/state/model";
-import { useStore } from "../src/state/store";
-import type { Interval } from "../src/engine/types";
-import { resolveBlock } from "../src/lib/blockEntry";
-import { dayNum, fmtHours, fmtTime, weekdayShort } from "../src/lib/format";
+import { Surface } from "../../src/components/Surface";
+import { useTheme } from "../../src/theme/theme";
+import { radius, spacing, subjectColors, type } from "../../src/theme/tokens";
+import { computePlan, sessionKeyOf, unreviewedCorrections, weakestTopic } from "../../src/state/model";
+import { useStore } from "../../src/state/store";
+import type { Interval } from "../../src/engine/types";
+import { resolveBlock } from "../../src/lib/blockEntry";
+import { dayNum, fmtHours, fmtTime, weekdayShort } from "../../src/lib/format";
 
 const colorFor = (id: string, name?: string) =>
   subjectColors[name ?? ""] ?? subjectColors[id] ?? "#5E5CE6";
@@ -28,6 +28,8 @@ export default function ThisWeek() {
   const addBlock = useStore((s) => s.addBlock);
   const removeBlock = useStore((s) => s.removeBlock);
   const setRefDate = useStore((s) => s.setRefDate);
+  const reflowWeek = useStore((s) => s.reflowWeek);
+  const clearReflow = useStore((s) => s.clearReflow);
   const setSessionStatus = useStore((s) => s.setSessionStatus);
   const markSessionDone = useStore((s) => s.markSessionDone);
   const [banner, setBanner] = useState<{ text: string; undo?: () => void; error?: boolean } | null>(null);
@@ -161,6 +163,27 @@ export default function ThisWeek() {
             <Text style={[type.headline, { color: colors.accent }]}>Next ›</Text>
           </Pressable>
         </View>
+
+        {/* Self-heal: re-fit the remaining goal from today when you've fallen behind. */}
+        {state.week.reflowedFromISO ? (
+          <Pressable
+            onPress={() => { clearReflow(); setBanner({ text: "Back to the full even week." }); }}
+            style={[styles.reflowRow, { backgroundColor: colors.accentSoft }]}
+          >
+            <Text style={[type.footnote, { color: colors.accent, fontWeight: "700" }]}>✓ Self-healing on — remaining hours re-fit from today</Text>
+            <Text style={[type.footnote, { color: colors.accent }]}>Reset</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => {
+              reflowWeek(todayISO);
+              setBanner({ text: "Reflowed — I re-fit what's left into the days ahead.", undo: () => { clearReflow(); setBanner(null); } });
+            }}
+            style={[styles.reflowRow, { backgroundColor: colors.surface, borderColor: colors.separator, borderWidth: 1 }]}
+          >
+            <Text style={[type.footnote, { color: colors.text, fontWeight: "700" }]}>Behind? Reflow the rest of the week →</Text>
+          </Pressable>
+        )}
 
         {/* Natural-language quick block */}
         <Surface style={styles.quickAdd}>
@@ -301,6 +324,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" },
   iconBtn: { width: 40, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
   weekNav: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
+  reflowRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
   navBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md, alignItems: "center" },
   quickAdd: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.md, paddingVertical: spacing.md },
   input: { flex: 1, padding: 0 },
