@@ -51,6 +51,11 @@ interface Store {
   setDeck: (deck: DeckPlan | null) => void;
   appendChat: (msg: ChatMessage) => void;
   clearChat: () => void;
+  appendMessage: (msg: ChatMessage) => void;
+  startNewConversation: () => void;
+  selectConversation: (id: string) => void;
+  renameConversation: (id: string, title: string) => void;
+  deleteConversation: (id: string) => void;
   setPomodoro: (p: PomodoroConfig) => void;
   addPlant: (subjectId: string | undefined, date: string) => void;
   addReflection: (r: Reflection) => void;
@@ -99,13 +104,18 @@ export const useStore = create<Store>()(
       setDeck: (deck) => set(apply((s) => M.setDeck(s, deck))),
       appendChat: (msg) => set(apply((s) => M.appendChat(s, msg))),
       clearChat: () => set(apply((s) => M.clearChat(s))),
+      appendMessage: (msg) => set(apply((s) => M.appendMessage(s, msg))),
+      startNewConversation: () => set(apply((s) => M.startNewConversation(s))),
+      selectConversation: (id) => set(apply((s) => M.selectConversation(s, id))),
+      renameConversation: (id, title) => set(apply((s) => M.renameConversation(s, id, title))),
+      deleteConversation: (id) => set(apply((s) => M.deleteConversation(s, id))),
       setPomodoro: (p) => set(apply((s) => M.setPomodoro(s, p))),
       addPlant: (subjectId, date) => set(apply((s) => M.addPlant(s, subjectId, date))),
       addReflection: (r) => set(apply((s) => M.addReflection(s, r))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
-      name: "reflow-state-v10",
+      name: "reflow-state-v11",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
       onRehydrateStorage: () => (persisted, error) => {

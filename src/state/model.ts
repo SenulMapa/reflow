@@ -116,6 +116,14 @@ export type ChatMessage = {
   at: string;
 };
 
+/** A named tutor conversation — the unit of chat history (Grok/Tani-style drawer). */
+export interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  updatedAt: string;
+}
+
 export interface ReflowState {
   config: ReflowConfig;
   week: WeekState;
@@ -128,8 +136,12 @@ export interface ReflowState {
   progress: Progress;
   /** Cached tutor-arranged dashboard deck (null until first planned). */
   deck?: DeckPlan | null;
-  /** Tutor chat thread. */
+  /** Tutor chat thread (legacy single thread — superseded by `conversations`). */
   chat: ChatMessage[];
+  /** Tutor conversation history, most-recently-used first. */
+  conversations: Conversation[];
+  /** The open conversation, or null for a fresh (not-yet-saved) chat. */
+  activeConversationId: string | null;
   /** The focus garden — one plant per completed focus session. */
   garden: Plant[];
   /** Post-session reflections (the tutor's memory of how sessions went). */
@@ -155,6 +167,8 @@ export function initialState(refDateISO: string): ReflowState {
     sessionStatus: {},
     deck: null,
     chat: [],
+    conversations: [],
+    activeConversationId: null,
     garden: [],
     reflections: [],
     progress: {
@@ -419,6 +433,71 @@ export const clearChat = (s: ReflowState): ReflowState => ({
   ...s,
   chat: [],
 });
+
+// ── Tutor conversation history (Grok/Tani-style drawer) ─────────────────────
+
+const conversationTitle = (text: string): string => {
+  const t = text.trim().replace(/\s+/g, " ");
+  return t.length > 42 ? `${t.slice(0, 42)}…` : t || "New chat";
+};
+
+/**
+ * Append a message to the active conversation, creating one (titled from the
+ * message) when none is active. The touched conversation floats to the top of
+ * the MRU list so the drawer reads newest-first.
+ */
+export function appendMessage(s: ReflowState, msg: ChatMessage): ReflowState {
+  const active = s.conversations.find((c) => c.id === s.activeConversationId);
+  if (!active) {
+    const id = `conv_${msg.id}`;
+    const conv: Conversation = {
+      id,
+      title: conversationTitle(msg.role === "user" ? msg.content : "New chat"),
+      messages: [msg],
+      updatedAt: msg.at,
+    };
+    return { ...s, conversations: [conv, ...s.conversations], activeConversationId: id };
+  }
+  const updated: Conversation = { ...active, messages: [...active.messages, msg], updatedAt: msg.at };
+  return {
+    ...s,
+    conversations: [updated, ...s.conversations.filter((c) => c.id !== active.id)],
+  };
+}
+
+/** Begin a fresh chat — the next message opens a new conversation. */
+export const startNewConversation = (s: ReflowState): ReflowState => ({
+  ...s,
+  activeConversationId: null,
+});
+
+export const selectConversation = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  activeConversationId: id,
+});
+
+export const renameConversation = (s: ReflowState, id: string, title: string): ReflowState => ({
+  ...s,
+  conversations: s.conversations.map((c) =>
+    c.id === id ? { ...c, title: title.trim() || c.title } : c
+  ),
+});
+
+export function deleteConversation(s: ReflowState, id: string): ReflowState {
+  return {
+    ...s,
+    conversations: s.conversations.filter((c) => c.id !== id),
+    activeConversationId: s.activeConversationId === id ? null : s.activeConversationId,
+  };
+}
+
+/** Messages of the open conversation (empty for a fresh chat). */
+export const activeMessages = (s: ReflowState): ChatMessage[] =>
+  s.conversations.find((c) => c.id === s.activeConversationId)?.messages ?? [];
+
+/** The drawer list — {id, title}, most-recently-used first. */
+export const conversationList = (s: ReflowState): { id: string; title: string }[] =>
+  s.conversations.map((c) => ({ id: c.id, title: c.title }));
 
 // ── Reward economy (earn by studying, spend on leisure) ─────────────────────
 
