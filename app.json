@@ -3,7 +3,7 @@
     "name": "Reflow",
     "slug": "reflow",
     "scheme": "reflow",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -61,6 +61,8 @@
     },
     "updates": {
       "url": "https://u.expo.dev/5e3ec5c8-fdd2-4954-8677-8793e10e2f75",
+      "checkAutomatically": "NEVER",
+      "fallbackToCacheTimeout": 0,
       "requestHeaders": {
         "expo-channel-name": "production"
       }
