@@ -15,7 +15,7 @@ export default function RootLayout() {
   // Doto (dot-matrix numerals) · Geist (UI/body) · Geist SemiBold (headings) ·
   // Geist Mono (labels/data) · Newsreader Italic (page accent). SIL OFL 1.1, bundled.
   const [fontsLoaded, fontError] = useFonts({
-    Doto: require("../assets/fonts/Doto-ROND-wght.ttf"),
+    Doto: require("../assets/fonts/Doto.ttf"),
     Geist: require("../assets/fonts/Geist-Regular.ttf"),
     GeistSemiBold: require("../assets/fonts/Geist-SemiBold.ttf"),
     GeistMono: require("../assets/fonts/GeistMono-Regular.ttf"),
