@@ -7,6 +7,7 @@ import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ErrorBoundary } from "../src/components/ErrorBoundary";
 import { configureNotifications } from "../src/lib/notify";
 
 export default function RootLayout() {
@@ -59,7 +60,9 @@ export default function RootLayout() {
       <KeyboardProvider>
         <SafeAreaProvider>
           <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
+          <ErrorBoundary>
+            <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }} />
+          </ErrorBoundary>
         </SafeAreaProvider>
       </KeyboardProvider>
     </GestureHandlerRootView>

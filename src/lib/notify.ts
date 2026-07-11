@@ -49,11 +49,34 @@ async function isWeb(): Promise<boolean> {
   }
 }
 
+/**
+ * Crash-safe handle to expo-notifications. Returns null (and NEVER throws) when the
+ * native module can't be evaluated — most importantly on RN 0.85, where the deprecated
+ * `PushNotificationIOS` was removed from react-native core, so loading expo-notifications
+ * can throw `Invariant Violation: new NativeEventEmitter() requires a non-null argument`.
+ * That throw, unguarded, was the confirmed launch-crash (RCTFatal → whisper terminate →
+ * SIGABRT). A reminder feature failing to load must never abort app launch, so every
+ * caller degrades to a no-op instead. Mirrors the web guard in `isWeb`.
+ */
+type NotificationsModule = typeof import("expo-notifications");
+async function loadNotifications(): Promise<NotificationsModule | null> {
+  if (await isWeb()) return null;
+  try {
+    return await import("expo-notifications");
+  } catch (e) {
+    if (typeof __DEV__ !== "undefined" && __DEV__) {
+      console.warn("[notify] expo-notifications unavailable; reminders disabled:", e);
+    }
+    return null;
+  }
+}
+
 let configured = false;
 /** Show reminders as banners even with the app foregrounded. Call once at boot. */
 export async function configureNotifications(): Promise<void> {
-  if (configured || (await isWeb())) return;
-  const Notifications = await import("expo-notifications");
+  if (configured) return;
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -71,8 +94,8 @@ export async function configureNotifications(): Promise<void> {
  * background re-syncs never nag the student.
  */
 export async function ensureNotificationPermission(prompt = true): Promise<boolean> {
-  if (await isWeb()) return false;
-  const Notifications = await import("expo-notifications");
+  const Notifications = await loadNotifications();
+  if (!Notifications) return false;
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
   if (!prompt) return false;
@@ -90,8 +113,8 @@ export async function syncSessionReminders(
   nameOf: (subjectId: string) => string,
   opts?: { leadMin?: number; prompt?: boolean }
 ): Promise<number> {
-  if (await isWeb()) return 0;
-  const Notifications = await import("expo-notifications");
+  const Notifications = await loadNotifications();
+  if (!Notifications) return 0;
   // Home re-syncs with prompt:false (silent); the Setup toggle passes prompt:true.
   if (!(await ensureNotificationPermission(opts?.prompt ?? false))) return 0;
 

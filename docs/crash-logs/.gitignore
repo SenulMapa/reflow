@@ -1,0 +1,7 @@
+# Raw device pulls contain PERSONAL DATA — other apps' crash reports (WhatsApp,
+# Instagram, Spotify, …), device UDIDs, and bundle container paths. This repo is
+# PUBLIC. Never commit raw logs. Keep only README.md, capture.sh, and curated,
+# sanitized notes (DIAGNOSIS.md).
+device-pull/
+*.ips
+*.txt
