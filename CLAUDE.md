@@ -6,11 +6,11 @@
 
 **The Moat:** A **Allocator + Placer** scheduling engine that derives weekly subject hours from signals (days-to-exam, topic confidence, past-paper performance, subject load) and reflows them into the calendar around fixed commitments. Engine is pure zero-I/O TypeScript, runs offline on-device AND server-side (for Siri). Auto-applies with one-tap undo.
 
-**Current State:** Phases 0–4 complete & shipped. Phase 5 (library/glass) + Phase 6 (Siri) blocked on user/infrastructure. V2 "Orbit + AI Tutor" shipped. SDK 56 upgraded (RN 0.85.3, react 19.2.3). Latest session (2026-07-08 03:56) reviewed reflect/timer/garden features.
+**Current State:** Phases 0–4 complete & shipped. Phase 5 (library/glass) + Phase 6 (Siri) blocked on user/infrastructure. V2 "Orbit + AI Tutor" shipped. **v2.0.0 (2026-07-11): ground-up rebuild on Expo SDK 54 (RN 0.81.5, React 19.1.0) — downgraded from SDK 56 and stripped the native-module launch-crash class** (removed expo-updates/notifications/whisper.rn/audio/glass-effect/blur/image/supabase/secure-store/file+doc+image-picker/sharing/web-browser/datetimepicker/keyboard-controller/flash-list). Pure engine/state/lib preserved (128 tests). Lean Expo-Go-stable deps only. See memory `reflow-sdk54-rebuild-v2`.
 
 ## Tech Stack
 
-- **Framework:** Expo SDK 56, React Native 0.85.3, React 19.2.3
+- **Framework:** Expo SDK 54, React Native 0.81.5, React 19.1.0 (downgraded from SDK 56 in v2.0.0 rebuild to kill native-module launch crashes)
 - **Routing:** expo-router (deep-link enabled)
 - **State:** Zustand v5 + AsyncStorage (offline-first, sync deferred to Supabase)
 - **Styling:** System-adaptive tokens (light warm-kraft/burnt-orange #D9541E, dark charcoal-violet #8B6FFF/amber), PP Editorial New fonts (Ultrabold/Ultralight)
