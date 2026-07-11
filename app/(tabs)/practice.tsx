@@ -198,10 +198,19 @@ export default function Practice() {
           </Surface>
         )}
 
+        {/* AI examiner: mark a written answer against a mark scheme */}
+        <Pressable
+          onPress={() => router.push("/grade")}
+          style={[styles.correctionsRow, { borderColor: colors.separator }]}
+        >
+          <Text style={[type.mono, { color: colors.text }]}>MARK MY ANSWER (EXAMINER)</Text>
+          <Text style={[type.mono, { color: colors.textDim }]}>›</Text>
+        </Pressable>
+
         {/* The do→log-mistakes loop: what you got wrong lives in the booklet */}
         <Pressable
           onPress={() => router.push("/corrections")}
-          style={[styles.correctionsRow, { borderColor: colors.separator }]}
+          style={[styles.correctionsRow, { borderColor: colors.separator, marginTop: spacing.md }]}
         >
           <Text style={[type.mono, { color: colors.text }]}>REVIEW CORRECTIONS BOOKLET</Text>
           <Text style={[type.mono, { color: colors.textDim }]}>›</Text>
