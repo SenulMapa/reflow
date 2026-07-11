@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { Interval } from "../engine/types";
 import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
-import type { Card, ChatMessage, Correction, FocusSession, PastPaper, Reflection, ReflowState, Source } from "./model";
+import type { Annotation, Card, ChatMessage, Correction, FocusSession, PastPaper, Reflection, ReflowState, Source } from "./model";
 import type { DeckPlan } from "../ui/deck";
 import type { PomodoroConfig } from "../lib/pomodoro";
 import type { RewardItem } from "./rewards";
@@ -62,6 +62,8 @@ interface Store {
   addCard: (c: Card) => void;
   removeCard: (id: string) => void;
   reviewCard: (id: string, quality: number, todayISO: string) => void;
+  addAnnotation: (a: Annotation) => void;
+  removeAnnotation: (id: string) => void;
   reset: () => void;
 }
 
@@ -118,6 +120,8 @@ export const useStore = create<Store>()(
       addCard: (c) => set(apply((s) => M.addCard(s, c))),
       removeCard: (id) => set(apply((s) => M.removeCard(s, id))),
       reviewCard: (id, quality, todayISO) => set(apply((s) => M.reviewCard(s, id, quality, todayISO))),
+      addAnnotation: (a) => set(apply((s) => M.addAnnotation(s, a))),
+      removeAnnotation: (id) => set(apply((s) => M.removeAnnotation(s, id))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {

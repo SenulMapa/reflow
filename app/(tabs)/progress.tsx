@@ -62,6 +62,7 @@ export default function Progress() {
     { href: "/metrics", label: "Insights", sub: "Confidence, performance, exam countdown" },
     { href: "/rewards", label: "Rewards", sub: "Coins, streaks and the shop" },
     { href: "/cards", label: "Flashcards", sub: "Spaced-repetition review queue" },
+    { href: "/library", label: "Textbooks", sub: "Read & annotate your PDF sources" },
   ];
 
   return (

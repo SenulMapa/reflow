@@ -124,6 +124,21 @@ export interface Card {
   sm2: Sm2State;
 }
 
+/**
+ * A pen/annotation over a KB PDF source (textbook reader). `data` is a serialized
+ * payload whose shape depends on `kind`: ink = stroke points (+pressure), highlight
+ * = a rect, note = anchored text. Local-first — ink never leaves the device.
+ */
+export interface Annotation {
+  id: string;
+  sourceId: string;
+  page: number;
+  kind: "ink" | "highlight" | "note";
+  data: string;
+  color: string;
+  createdAt: string;
+}
+
 /** A single message in the tutor chat thread. */
 export type ChatMessage = {
   id: string;
@@ -164,6 +179,8 @@ export interface ReflowState {
   reflections: Reflection[];
   /** Spaced-repetition flashcards (SM-2 scheduled). */
   cards: Card[];
+  /** Pen/highlight/note annotations over KB PDF sources (textbook reader). */
+  annotations: Annotation[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -190,6 +207,7 @@ export function initialState(refDateISO: string): ReflowState {
     garden: [],
     reflections: [],
     cards: [],
+    annotations: [],
     progress: {
       // Honest start — everything is earned, nothing is seeded.
       coins: 0,
@@ -434,6 +452,23 @@ export function dueCards(s: ReflowState, todayISO: string): Card[] {
 /** Count of due cards for a subject — an allocator signal (feature 2.1). */
 export function dueCountForSubject(s: ReflowState, subjectId: string, todayISO: string): number {
   return s.cards.filter((c) => c.subjectId === subjectId && c.sm2.dueAt <= todayISO).length;
+}
+
+// ── Textbook annotations (pen/highlight/note over KB PDF sources) ────────────
+
+export const addAnnotation = (s: ReflowState, a: Annotation): ReflowState => ({
+  ...s,
+  annotations: [...s.annotations, a],
+});
+
+export const removeAnnotation = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  annotations: s.annotations.filter((a) => a.id !== id),
+});
+
+/** All annotations for a given source page, in creation order. */
+export function annotationsFor(s: ReflowState, sourceId: string, page: number): Annotation[] {
+  return s.annotations.filter((a) => a.sourceId === sourceId && a.page === page);
 }
 
 // ── Session missions + completion (Fable #1, #2) ────────────────────────────
