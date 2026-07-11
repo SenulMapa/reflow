@@ -7,7 +7,7 @@ import { Hairline } from "../src/components/Hairline";
 import { DotField } from "../src/components/DotField";
 import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, type } from "../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { levelProgress } from "../src/state/rewards";
 
@@ -142,7 +142,7 @@ export default function Rewards() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: spacing.lg, ...bounded },
   statRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xl },
   stat: { alignItems: "center", gap: 2 },
   readout: { flexDirection: "row", alignItems: "baseline", gap: spacing.xs, marginTop: 2 },

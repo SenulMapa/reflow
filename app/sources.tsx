@@ -7,7 +7,7 @@ import { Surface } from "../src/components/Surface";
 import { DotField } from "../src/components/DotField";
 import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, type } from "../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { classifySource, type Source } from "../src/state/model";
 
@@ -159,7 +159,7 @@ export default function Sources() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: spacing.lg, ...bounded },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },

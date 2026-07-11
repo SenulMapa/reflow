@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
 import { DotField } from "../src/components/DotField";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, type } from "../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 
 export default function Corrections() {
@@ -155,7 +155,7 @@ export default function Corrections() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: spacing.lg, ...bounded },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1 },

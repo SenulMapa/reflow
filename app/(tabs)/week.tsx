@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../../src/components/Surface";
 import { DotField } from "../../src/components/DotField";
 import { useTheme } from "../../src/theme/theme";
-import { radius, spacing, type } from "../../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../../src/theme/tokens";
 import { computePlan, sessionKeyOf, unreviewedCorrections, weakestTopic } from "../../src/state/model";
 import { useStore } from "../../src/state/store";
 import type { Interval } from "../../src/engine/types";
@@ -315,7 +315,7 @@ export default function ThisWeek() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg, paddingBottom: 0 },
+  scroll: { padding: spacing.lg, paddingBottom: 0, ...bounded },
   headerRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: spacing.md },
   navRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs, justifyContent: "flex-end", maxWidth: 160 },
   iconBtn: { paddingHorizontal: spacing.sm, height: 30, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },

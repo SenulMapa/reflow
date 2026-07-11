@@ -8,7 +8,7 @@ import { SegmentedBar } from "../src/components/SegmentedBar";
 import { DotField } from "../src/components/DotField";
 import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, type } from "../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { computePlan } from "../src/state/model";
 import { effectiveConfidence } from "../src/data/subjects";
@@ -201,7 +201,7 @@ export default function Setup() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: spacing.lg, ...bounded },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   subjectRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },

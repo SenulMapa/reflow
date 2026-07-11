@@ -5,7 +5,7 @@ import { Surface } from "../src/components/Surface";
 import { DotField } from "../src/components/DotField";
 import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, type } from "../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { AVAILABILITY_PRESETS } from "../src/lib/buildWeek";
 
@@ -95,7 +95,7 @@ export default function Availability() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: spacing.lg, ...bounded },
   statRow: { flexDirection: "row", alignItems: "baseline", gap: spacing.sm, marginTop: spacing.xs },
   presets: { flexDirection: "row", gap: spacing.sm },
   preset: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },

@@ -5,7 +5,7 @@ import { Surface } from "../../src/components/Surface";
 import { DotField } from "../../src/components/DotField";
 import { SegmentedBar } from "../../src/components/SegmentedBar";
 import { useTheme } from "../../src/theme/theme";
-import { radius, spacing, type } from "../../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../../src/theme/tokens";
 import { useStore } from "../../src/state/store";
 import { generate, isLLMConfigured } from "../../src/lib/llm";
 
@@ -198,7 +198,7 @@ export default function Practice() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: spacing.lg, ...bounded },
   tabs: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
   tab: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
