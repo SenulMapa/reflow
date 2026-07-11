@@ -18,7 +18,9 @@ module.exports = function (api) {
           },
         };
       },
-      "react-native-reanimated/plugin", // MUST be last
+      // Reanimated 4 (SDK 54): the worklet Babel plugin now lives in
+      // react-native-worklets and MUST be listed last.
+      "react-native-worklets/plugin",
     ],
   };
 };

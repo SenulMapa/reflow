@@ -18,7 +18,6 @@ import { spacing, type, radius, bounded } from "../../src/theme/tokens";
 const ROWS: { href: string; label: string; sub: string }[] = [
   { href: "/metrics", label: "Insights", sub: "Confidence, performance, countdown" },
   { href: "/corrections", label: "Corrections", sub: "Log mistakes, drive the weakness loop" },
-  { href: "/sources", label: "Library", sub: "PDFs, videos and links" },
   { href: "/tutor", label: "Tutor", sub: "Ask a question or think out loud" },
   { href: "/rewards", label: "Rewards", sub: "Coins, streaks and the shop" },
   { href: "/setup", label: "Settings", sub: "Subjects, exams, availability, goal" },

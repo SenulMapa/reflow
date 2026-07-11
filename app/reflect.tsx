@@ -8,7 +8,6 @@ import { useStore } from "../src/state/store";
 import { computePlan, sessionKeyOf } from "../src/state/model";
 import { PressableScale } from "../src/components/PressableScale";
 import { DotField } from "../src/components/DotField";
-import { VoiceReflectButton } from "../src/components/VoiceReflectButton";
 import { haptics } from "../src/lib/haptics";
 import { fmtTime } from "../src/lib/format";
 
@@ -93,13 +92,6 @@ export default function Reflect() {
             })}
           </View>
 
-          {/* Voice reflection — on-device transcription (native only). */}
-          {Platform.OS !== "web" && (
-            <View style={{ marginTop: spacing.lg }}>
-              <VoiceReflectButton onResult={(t) => setText((prev) => (prev ? `${prev} ${t}` : t))} />
-            </View>
-          )}
-
           {/* Reflection text */}
           <View style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
             <TextInput
@@ -113,10 +105,6 @@ export default function Reflect() {
               autoFocus
             />
           </View>
-          <Text style={[type.caption, { color: colors.textFaint, marginTop: spacing.sm }]}>
-            Voice reflections arrive with the installable build — on-device, no typing.
-          </Text>
-
           <PressableScale haptic="light" onPress={save} disabled={!canSave}
             style={[styles.save, { backgroundColor: canSave ? colors.display : colors.raised }]}>
             <Text style={[type.caption, { color: canSave ? colors.bg : colors.textFaint }]}>save reflection</Text>

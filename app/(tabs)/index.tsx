@@ -27,7 +27,6 @@ import { PressableScale } from "../../src/components/PressableScale";
 import { FadeInView } from "../../src/components/FadeInView";
 import { DotField } from "../../src/components/DotField";
 import { selectNowState } from "../../src/lib/nowBlock";
-import { syncSessionReminders } from "../../src/lib/notify";
 
 const shiftISO = (iso: string, d: number) => {
   const x = new Date(iso + "T00:00:00Z");
@@ -101,14 +100,6 @@ export default function Home() {
   }, []);
   const deck = state.deck ?? fallbackDeck;
   const coachBody = deck.coachNote?.body ?? "Put your data in, do the session I pick — I'll keep the plan honest.";
-
-  // Keep local session reminders in step with the plan (silent — only reschedules
-  // if the student already granted permission via Setup; no-op on web).
-  const sessionSig = plan.sessions.map(sessionKeyOf).join(",");
-  useEffect(() => {
-    syncSessionReminders(plan.sessions, (id) => nameById[id] ?? id, { prompt: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionSig]);
 
   // ── WhySheet (trust receipts) ──
   const [why, setWhy] = useState<WhyData | null>(null);
