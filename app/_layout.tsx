@@ -2,7 +2,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as Updates from "expo-updates";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -14,7 +14,7 @@ export default function RootLayout() {
   // "Nothing" type system — family keys must match `fonts.*` in src/theme/tokens.ts.
   // Doto (dot-matrix numerals) · Geist (UI/body) · Geist SemiBold (headings) ·
   // Geist Mono (labels/data) · Newsreader Italic (page accent). SIL OFL 1.1, bundled.
-  const [loaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Doto: require("../assets/fonts/Doto-ROND-wght.ttf"),
     Geist: require("../assets/fonts/Geist-Regular.ttf"),
     GeistSemiBold: require("../assets/fonts/Geist-SemiBold.ttf"),
@@ -22,6 +22,17 @@ export default function RootLayout() {
     GeistMonoMedium: require("../assets/fonts/GeistMono-Medium.ttf"),
     NewsreaderItalic: require("../assets/fonts/Newsreader-Italic.ttf"),
   });
+
+  // Never let font loading brick launch. The old gate hard-blocked on `loaded`
+  // and dropped `useFonts`' error, so a single font that fails to register
+  // on-device (the Doto *variable* font is the prime suspect) left the app on a
+  // permanent blank screen — which reads as a launch "crash" but writes NO iOS
+  // crash log, because nothing actually crashed. Proceed as soon as fonts settle
+  // (load OR error), with a hard timeout so a hung loader can never block boot.
+  // A missing font simply falls back to the system face — degraded, never bricked.
+  const [ready, setReady] = useState(false);
+  useEffect(() => { if (fontsLoaded || fontError) setReady(true); }, [fontsLoaded, fontError]);
+  useEffect(() => { const t = setTimeout(() => setReady(true), 2500); return () => clearTimeout(t); }, []);
 
   // Configure local notifications once at boot (no-op on web).
   useEffect(() => { configureNotifications(); }, []);
@@ -48,7 +59,7 @@ export default function RootLayout() {
     return () => clearTimeout(t);
   }, []);
 
-  if (!loaded) return <View style={{ flex: 1, backgroundColor: palette.light.bg }} />;
+  if (!ready) return <View style={{ flex: 1, backgroundColor: palette.light.bg }} />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

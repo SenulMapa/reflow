@@ -14,8 +14,17 @@ import { resolveGlassSupport } from "./glassSupport";
  * `resolveGlassSupport` because that call THROWS when the ExpoGlassEffect pod
  * isn't linked (sideloaded / SideStore IPAs); an unguarded throw here runs at
  * boot and crashes launch. On failure we degrade to the flat surface.
+ *
+ * TEMP (v1.0.5) — GLASS RENDER DISABLED. expo-glass-effect shipped for the first
+ * time in the 1.0.4 native build; on iOS 26 that made every card render a native
+ * liquid-glass view, right after which the app terminated with NO app-named
+ * `.ips` (the signature of a memory/jetsam kill → `JetsamEvent-*.ips`, not
+ * `Reflow.ips`). 1.0.3 had no glass and launched fine. Force the flat surface
+ * until glass can be verified on a real iOS 26 device (Linux/web can't render or
+ * profile it). Flip `GLASS_ENABLED` back to true to re-enable.
  */
-const glassSupported = resolveGlassSupport(isLiquidGlassAvailable);
+const GLASS_ENABLED = false;
+const glassSupported = GLASS_ENABLED && resolveGlassSupport(isLiquidGlassAvailable);
 
 export function Surface({
   style,
