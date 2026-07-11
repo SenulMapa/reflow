@@ -44,7 +44,7 @@ export function Markdown({ content, color }: { content: string; color?: string }
           key={j}
           style={
             s.code
-              ? { fontFamily: "Courier New", fontSize: 14, backgroundColor: colors.accentSoft }
+              ? { fontFamily: fonts.mono, fontSize: 13.5, backgroundColor: colors.raised }
               : s.bold
                 ? { fontFamily: fonts.display }
                 : s.italic
@@ -70,8 +70,8 @@ export function Markdown({ content, color }: { content: string; color?: string }
       while (i < lines.length && !lines[i]!.trim().startsWith("```")) buf.push(lines[i++]!);
       i++; // closing fence
       blocks.push(
-        <View key={key++} style={{ backgroundColor: colors.accentSoft, borderRadius: radius.sm, padding: spacing.md, marginVertical: spacing.sm }}>
-          <Text style={{ fontFamily: "Courier New", fontSize: 13.5, color: ink }}>{buf.join("\n")}</Text>
+        <View key={key++} style={{ backgroundColor: colors.raised, borderRadius: radius.sm, padding: spacing.md, marginVertical: spacing.sm }}>
+          <Text style={{ fontFamily: fonts.mono, fontSize: 13.5, color: ink }}>{buf.join("\n")}</Text>
         </View>
       );
       continue;
@@ -99,7 +99,7 @@ export function Markdown({ content, color }: { content: string; color?: string }
         <View key={key++} style={{ gap: 4, marginVertical: spacing.xs }}>
           {items.map((it, j) => (
             <View key={j} style={{ flexDirection: "row", gap: spacing.sm }}>
-              <Text style={[type.body, { color: colors.accent }]}>{it.marker}</Text>
+              <Text style={[type.body, { color: colors.textDim }]}>{it.marker}</Text>
               <View style={{ flex: 1 }}><Inline src={it.text} base={type.body} /></View>
             </View>
           ))}

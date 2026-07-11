@@ -26,8 +26,8 @@ export function WhySheet({ data, onClose }: { data: WhyData | null; onClose: () 
               <Text key={i} style={[type.body, { color: colors.textDim }]}>{l}</Text>
             ))}
           </View>
-          <PressableScale haptic="selection" onPress={onClose} style={[styles.close, { backgroundColor: colors.accentSoft }]}>
-            <Text style={[type.headline, { color: colors.accent }]}>Got it</Text>
+          <PressableScale haptic="selection" onPress={onClose} style={[styles.close, { backgroundColor: colors.display }]}>
+            <Text style={[type.headline, { color: colors.bg }]}>Got it</Text>
           </PressableScale>
         </Pressable>
       </Pressable>
@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
   sheet: { borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, borderWidth: 1, padding: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.xs },
   grabber: { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: spacing.md },
-  close: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg, alignItems: "center" },
+  close: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
 });

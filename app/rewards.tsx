@@ -3,6 +3,9 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { Hairline } from "../src/components/Hairline";
+import { DotField } from "../src/components/DotField";
+import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
@@ -43,20 +46,31 @@ export default function Rewards() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Link href="/" asChild><Pressable hitSlop={10}><Text style={[type.footnote, { color: colors.accent }]}>‹ Home</Text></Pressable></Link>
+        <Link href="/" asChild><Pressable hitSlop={10}><Text style={[type.caption, { color: colors.textDim }]}>‹ HOME</Text></Pressable></Link>
         <Text style={[type.largeTitle, { color: colors.text, marginTop: spacing.xs }]}>Rewards</Text>
 
         {/* Balance */}
         <View style={{ alignItems: "center", marginVertical: spacing.xl }}>
           <Text style={[type.caption, { color: colors.textDim }]}>YOUR BALANCE</Text>
-          <Text style={[type.hero, { color: colors.gold, fontSize: 52, lineHeight: 56, marginTop: spacing.xs }]}>
-            {coins}
-          </Text>
-          <Text style={[type.footnote, { color: colors.textDim }]}>coins · 🔥 {streakDays}-day streak · Level {lp.level}</Text>
+          <Text style={[type.numeralLg, { color: colors.text, marginTop: spacing.xs }]}>{coins}</Text>
+          <Text style={[type.caption, { color: colors.textDim }]}>COINS</Text>
         </View>
 
-        <Text style={[type.footnote, { color: colors.textDim, textAlign: "center", marginBottom: spacing.lg }]}>
+        <View style={styles.statRow}>
+          <View style={styles.stat}>
+            <Text style={[type.numeral, { color: colors.text, fontSize: 28, lineHeight: 32 }]}>{streakDays}</Text>
+            <Text style={[type.caption, { color: colors.textDim }]}>DAY STREAK</Text>
+          </View>
+          <Hairline vertical />
+          <View style={styles.stat}>
+            <Text style={[type.numeral, { color: colors.text, fontSize: 28, lineHeight: 32 }]}>{lp.level}</Text>
+            <Text style={[type.caption, { color: colors.textDim }]}>LEVEL</Text>
+          </View>
+        </View>
+
+        <Text style={[type.footnote, { color: colors.textDim, textAlign: "center", marginVertical: spacing.lg }]}>
           Earn coins by studying. Spend them on the good stuff, no guilt.
         </Text>
 
@@ -67,25 +81,35 @@ export default function Rewards() {
             const afford = coins >= r.cost;
             return (
               <Surface key={r.id} style={styles.rewardRow}>
-                <Text style={{ fontSize: 22 }}>{r.icon ?? "✦"}</Text>
+                <View style={[styles.dot, { backgroundColor: colors.text }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={[type.body, { color: colors.text }]}>{r.label}</Text>
-                  <Text style={[type.footnote, { color: colors.gold }]}>🪙 {r.cost}</Text>
+                  <Text style={[type.mono, { color: colors.text, textTransform: "uppercase" }]}>{r.label}</Text>
+                  <View style={styles.readout}>
+                    <Text style={[type.data, { color: colors.textDim }]}>{r.cost}</Text>
+                    <Text style={[type.caption, { color: colors.textFaint }]}>COINS</Text>
+                  </View>
                 </View>
-                <Pressable onPress={() => redeem(r.id, r.label)} disabled={!afford} style={[styles.redeem, { backgroundColor: afford ? colors.gold : colors.separator }]}>
-                  <Text style={[type.footnote, { color: afford ? "#fff" : colors.textFaint, fontFamily: type.headline.fontFamily }]}>{afford ? "Redeem" : "Locked"}</Text>
-                </Pressable>
-                <Pressable onPress={() => removeReward(r.id)} hitSlop={8}><Text style={[type.footnote, { color: colors.textFaint }]}>✕</Text></Pressable>
+                <PressableScale
+                  onPress={() => redeem(r.id, r.label)}
+                  disabled={!afford}
+                  style={[styles.redeem, afford ? { backgroundColor: colors.display, borderColor: colors.display } : { borderColor: colors.line2 }]}
+                >
+                  <Text style={[type.caption, { color: afford ? colors.bg : colors.textFaint }]}>{afford ? "REDEEM" : "LOCKED"}</Text>
+                </PressableScale>
+                <Pressable onPress={() => removeReward(r.id)} hitSlop={8}><Text style={[type.mono, { color: colors.textFaint }]}>✕</Text></Pressable>
               </Surface>
             );
           })}
         </View>
 
         {/* Add reward */}
-        <Surface style={[styles.addRow, { marginTop: spacing.md }]}>
-          <TextInput value={label} onChangeText={setLabel} placeholder="New reward (e.g. boba run)" placeholderTextColor={colors.textFaint} style={[type.body, { color: colors.text, flex: 1 }]} />
-          <TextInput value={cost} onChangeText={setCost} placeholder="cost" keyboardType="number-pad" placeholderTextColor={colors.textFaint} style={[type.body, { color: colors.text, width: 52 }]} />
-          <Pressable onPress={add} hitSlop={8}><Text style={[type.headline, { color: colors.accent }]}>Add</Text></Pressable>
+        <Surface style={[styles.addWrap, { marginTop: spacing.md }]}>
+          <Text style={[type.caption, { color: colors.textDim }]}>NEW REWARD</Text>
+          <View style={styles.addRow}>
+            <TextInput value={label} onChangeText={setLabel} placeholder="e.g. boba run" placeholderTextColor={colors.textFaint} style={[type.body, styles.input, { color: colors.text, borderColor: colors.line2, flex: 1 }]} />
+            <TextInput value={cost} onChangeText={setCost} placeholder="cost" keyboardType="number-pad" placeholderTextColor={colors.textFaint} style={[type.mono, styles.input, { color: colors.text, borderColor: colors.line2, width: 60 }]} />
+            <PressableScale onPress={add} hitSlop={8}><Text style={[type.caption, { color: colors.text }]}>ADD</Text></PressableScale>
+          </View>
         </Surface>
 
         {/* Ledger */}
@@ -96,7 +120,7 @@ export default function Rewards() {
               {ledger.slice(0, 8).map((e) => (
                 <View key={e.id} style={styles.ledgerRow}>
                   <Text style={[type.footnote, { color: colors.textDim, flex: 1 }]}>{e.reason}</Text>
-                  <Text style={[type.footnote, { color: e.kind === "earn" ? colors.success : colors.gold, fontFamily: type.data.fontFamily }]}>
+                  <Text style={[type.data, { color: colors.text }]}>
                     {e.kind === "earn" ? "+" : "−"}{e.amount}
                   </Text>
                 </View>
@@ -108,8 +132,8 @@ export default function Rewards() {
       </ScrollView>
 
       {flash && (
-        <View style={[styles.flash, { backgroundColor: colors.gold }]}>
-          <Text style={[type.headline, { color: "#fff", textAlign: "center" }]}>{flash}</Text>
+        <View style={[styles.flash, { backgroundColor: colors.display }]}>
+          <Text style={[type.headline, { color: colors.bg, textAlign: "center" }]}>{flash}</Text>
         </View>
       )}
     </SafeAreaView>
@@ -119,9 +143,15 @@ export default function Rewards() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
+  statRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: spacing.xl },
+  stat: { alignItems: "center", gap: 2 },
+  readout: { flexDirection: "row", alignItems: "baseline", gap: spacing.xs, marginTop: 2 },
   rewardRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  redeem: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  dot: { width: 10, height: 10, borderRadius: 5 },
+  redeem: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
+  addWrap: { gap: spacing.md },
   addRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  ledgerRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: spacing.xs },
-  flash: { position: "absolute", bottom: spacing.xxl, left: spacing.xl, right: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.lg },
+  input: { paddingVertical: spacing.sm, borderBottomWidth: 1 },
+  ledgerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: spacing.xs },
+  flash: { position: "absolute", bottom: spacing.xxl, left: spacing.xl, right: spacing.xl, paddingVertical: spacing.md, borderRadius: radius.md },
 });

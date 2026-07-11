@@ -4,12 +4,15 @@ import { useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { DotField } from "../src/components/DotField";
+import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
+import { radius, spacing, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { classifySource, type Source } from "../src/state/model";
 
-const ICON: Record<Source["type"], string> = { pdf: "📄", youtube: "▶️", link: "🔗" };
+/** Nothing kills emoji-as-UI: source kind reads as a mono label badge. */
+const TYPE_LABEL: Record<Source["type"], string> = { pdf: "PDF", youtube: "YT", link: "URL" };
 const NOTEBOOKLM = "https://notebooklm.google.com/";
 
 export default function Sources() {
@@ -66,10 +69,11 @@ export default function Sources() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Link href="/setup" asChild>
           <Pressable hitSlop={10}>
-            <Text style={[type.headline, { color: colors.accent }]}>‹ Setup</Text>
+            <Text style={[type.caption, { color: colors.textDim }]}>‹ SETUP</Text>
           </Pressable>
         </Link>
         <Text style={[type.largeTitle, { color: colors.text }]}>Knowledge Base</Text>
@@ -78,19 +82,28 @@ export default function Sources() {
         </Text>
 
         {/* Tag subject */}
+        <Text style={[type.caption, { color: colors.textDim, marginBottom: spacing.sm }]}>TAG SUBJECT</Text>
         <View style={styles.pickRow}>
-          <Pressable onPress={() => setSubjectId(undefined)} style={[styles.pick, { backgroundColor: subjectId === undefined ? colors.accent : colors.accentSoft }]}>
-            <Text style={[type.footnote, { color: subjectId === undefined ? "#fff" : colors.accent, fontWeight: "600" }]}>General</Text>
-          </Pressable>
+          <PressableScale
+            onPress={() => setSubjectId(undefined)}
+            style={[styles.pick, subjectId === undefined ? { backgroundColor: colors.display, borderColor: colors.display } : { borderColor: colors.line2 }]}
+          >
+            <Text style={[type.caption, { color: subjectId === undefined ? colors.bg : colors.text }]}>GENERAL</Text>
+          </PressableScale>
           {subjects.map((s) => (
-            <Pressable key={s.id} onPress={() => setSubjectId(s.id)} style={[styles.pick, { backgroundColor: subjectId === s.id ? (subjectColors[s.name] ?? colors.accent) : colors.accentSoft }]}>
-              <Text style={[type.footnote, { color: subjectId === s.id ? "#fff" : colors.accent, fontWeight: "600" }]}>{s.name}</Text>
-            </Pressable>
+            <PressableScale
+              key={s.id}
+              onPress={() => setSubjectId(s.id)}
+              style={[styles.pick, subjectId === s.id ? { backgroundColor: colors.display, borderColor: colors.display } : { borderColor: colors.line2 }]}
+            >
+              <Text style={[type.caption, { color: subjectId === s.id ? colors.bg : colors.text }]}>{s.name.toUpperCase()}</Text>
+            </PressableScale>
           ))}
         </View>
 
         {/* Add controls */}
         <Surface style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <Text style={[type.caption, { color: colors.textDim }]}>ADD A LINK</Text>
           <View style={styles.row}>
             <TextInput
               value={url}
@@ -100,18 +113,18 @@ export default function Sources() {
               autoCapitalize="none"
               autoCorrect={false}
               onSubmitEditing={addLink}
-              style={[type.body, styles.input, { color: colors.text }]}
+              style={[type.mono, styles.input, { color: colors.text, borderColor: colors.line2 }]}
             />
-            <Pressable onPress={addLink} hitSlop={8}>
-              <Text style={[type.headline, { color: colors.accent }]}>Add</Text>
-            </Pressable>
+            <PressableScale onPress={addLink} hitSlop={8}>
+              <Text style={[type.caption, { color: colors.text }]}>ADD</Text>
+            </PressableScale>
           </View>
-          <Pressable onPress={pickPdf} style={[styles.pdfBtn, { backgroundColor: colors.accent }]}>
-            <Text style={[type.headline, { color: "#fff" }]}>📄 Add a PDF</Text>
-          </Pressable>
-          <Pressable onPress={() => Linking.openURL(NOTEBOOKLM)} style={[styles.ghost, { backgroundColor: colors.accentSoft }]}>
-            <Text style={[type.footnote, { color: colors.accent, fontWeight: "600" }]}>Open in NotebookLM ↗</Text>
-          </Pressable>
+          <PressableScale onPress={pickPdf} style={[styles.pdfBtn, { backgroundColor: colors.display }]}>
+            <Text style={[type.headline, { color: colors.bg }]}>ADD A PDF</Text>
+          </PressableScale>
+          <PressableScale onPress={() => Linking.openURL(NOTEBOOKLM)} style={[styles.ghost, { borderColor: colors.line2 }]}>
+            <Text style={[type.caption, { color: colors.text }]}>OPEN IN NOTEBOOKLM ↗</Text>
+          </PressableScale>
         </Surface>
 
         {/* List */}
@@ -123,15 +136,17 @@ export default function Sources() {
           )}
           {state.sources.map((s) => (
             <Surface key={s.id} style={styles.sourceRow}>
-              <Text style={{ fontSize: 20 }}>{ICON[s.type]}</Text>
+              <View style={[styles.badge, { borderColor: colors.line2 }]}>
+                <Text style={[type.caption, { color: colors.text }]}>{TYPE_LABEL[s.type]}</Text>
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[type.body, { color: colors.text }]} numberOfLines={1}>{s.title}</Text>
                 <Text style={[type.caption, { color: colors.textFaint }]}>
-                  {s.subjectId ? `${nameById[s.subjectId]} · ` : ""}{s.ingested ? "ingested" : "pending ingest"}
+                  {s.subjectId ? `${nameById[s.subjectId]} · ` : ""}{s.ingested ? "INGESTED" : "PENDING INGEST"}
                 </Text>
               </View>
               <Pressable onPress={() => removeSource(s.id)} hitSlop={8}>
-                <Text style={[type.footnote, { color: colors.textFaint }]}>✕</Text>
+                <Text style={[type.mono, { color: colors.textFaint }]}>✕</Text>
               </Pressable>
             </Surface>
           ))}
@@ -146,10 +161,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md },
-  input: { flex: 1, padding: 0 },
-  pdfBtn: { paddingVertical: spacing.md, borderRadius: radius.md, alignItems: "center" },
-  ghost: { paddingVertical: spacing.sm, borderRadius: radius.md, alignItems: "center" },
+  input: { flex: 1, paddingVertical: spacing.sm, borderBottomWidth: 1 },
+  pdfBtn: { paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
+  ghost: { paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
   sourceRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  badge: { minWidth: 34, paddingHorizontal: spacing.xs, paddingVertical: 3, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },
 });

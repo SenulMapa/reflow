@@ -3,10 +3,11 @@ import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type, bounded } from "../src/theme/tokens";
+import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { computePlan, sessionKeyOf } from "../src/state/model";
 import { PressableScale } from "../src/components/PressableScale";
+import { DotField } from "../src/components/DotField";
 import { VoiceReflectButton } from "../src/components/VoiceReflectButton";
 import { haptics } from "../src/lib/haptics";
 import { fmtTime } from "../src/lib/format";
@@ -60,13 +61,14 @@ export default function Reflect() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <PressableScale haptic="selection" onPress={() => router.push("/")} hitSlop={10}>
-            <Text style={[type.footnote, { color: colors.accent }]}>‹ Home</Text>
+            <Text style={[type.caption, { color: colors.text }]}>‹ home</Text>
           </PressableScale>
 
-          <Text style={[type.largeTitle, { color: colors.text, marginTop: spacing.sm }]}>Reflect.</Text>
+          <Text style={[type.title, { color: colors.text, marginTop: spacing.sm }]}>Reflect.</Text>
           <Text style={[type.serif, { color: colors.textDim, marginTop: spacing.xs }]}>
             Just say what happened — what you covered, what tripped you up. I'll keep track.
           </Text>
@@ -74,7 +76,7 @@ export default function Reflect() {
           {/* Session picker */}
           <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.xl, marginBottom: spacing.sm }]}>Which session?</Text>
           <View style={styles.chips}>
-            <Chip label="General" active={pickedKey === null && !pickedSubject} color={colors.accent}
+            <Chip label="General" active={pickedKey === null && !pickedSubject}
               onPress={() => { setPickedKey(null); setPickedSubject(undefined); }} colors={colors} />
             {todaySessions.map((s) => {
               const key = sessionKeyOf(s);
@@ -84,7 +86,6 @@ export default function Reflect() {
                   key={key}
                   label={`${name} · ${fmtTime(s.interval.start)}`}
                   active={pickedKey === key}
-                  color={subjectColors[name] ?? colors.accent}
                   onPress={() => { setPickedKey(key); setPickedSubject(s.subjectId); }}
                   colors={colors}
                 />
@@ -112,13 +113,13 @@ export default function Reflect() {
               autoFocus
             />
           </View>
-          <Text style={[type.footnote, { color: colors.textFaint, marginTop: spacing.sm }]}>
-            🎙 Voice reflections arrive with the installable build — on-device, no typing.
+          <Text style={[type.caption, { color: colors.textFaint, marginTop: spacing.sm }]}>
+            Voice reflections arrive with the installable build — on-device, no typing.
           </Text>
 
           <PressableScale haptic="light" onPress={save} disabled={!canSave}
-            style={[styles.save, { backgroundColor: canSave ? colors.accent : colors.accentSoft }]}>
-            <Text style={[type.headline, { color: canSave ? "#fff" : colors.textFaint }]}>Save reflection</Text>
+            style={[styles.save, { backgroundColor: canSave ? colors.display : colors.raised }]}>
+            <Text style={[type.caption, { color: canSave ? colors.bg : colors.textFaint }]}>save reflection</Text>
           </PressableScale>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -126,13 +127,15 @@ export default function Reflect() {
   );
 }
 
-function Chip({ label, active, color, onPress, colors }: {
-  label: string; active: boolean; color: string; onPress: () => void; colors: { surface: string; separator: string; textDim: string };
+function Chip({ label, active, onPress, colors }: {
+  label: string; active: boolean; onPress: () => void; colors: { display: string; bg: string; line2: string; textDim: string };
 }) {
   return (
     <PressableScale haptic="selection" onPress={onPress}
-      style={[styles.chip, { backgroundColor: active ? color : colors.surface, borderColor: colors.separator }]}>
-      <Text style={[type.footnote, { color: active ? "#fff" : colors.textDim }]}>{label}</Text>
+      style={[styles.chip, active
+        ? { backgroundColor: colors.display, borderColor: colors.display }
+        : { backgroundColor: "transparent", borderColor: colors.line2 }]}>
+      <Text style={[type.mono, { color: active ? colors.bg : colors.textDim }]}>{label}</Text>
     </PressableScale>
   );
 }
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { padding: spacing.lg, paddingBottom: spacing.xxxl, ...bounded },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
-  field: { marginTop: spacing.lg, borderRadius: radius.lg, borderWidth: 1, padding: spacing.lg },
-  save: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.lg, alignItems: "center" },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
+  field: { marginTop: spacing.lg, borderRadius: radius.md, borderWidth: 1, padding: spacing.lg },
+  save: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
 });

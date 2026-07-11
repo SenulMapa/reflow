@@ -11,13 +11,16 @@ import { palette } from "../src/theme/tokens";
 import { configureNotifications } from "../src/lib/notify";
 
 export default function RootLayout() {
-  // PP Editorial New — the whole app's editorial voice. Family keys must match
-  // `fonts.*` in src/theme/tokens.ts.
+  // "Nothing" type system — family keys must match `fonts.*` in src/theme/tokens.ts.
+  // Doto (dot-matrix numerals) · Geist (UI/body) · Geist SemiBold (headings) ·
+  // Geist Mono (labels/data) · Newsreader Italic (page accent). SIL OFL 1.1, bundled.
   const [loaded] = useFonts({
-    PPEditorialUltrabold: require("../assets/fonts/PPEditorialNew-Ultrabold.otf"),
-    PPEditorialUltraboldItalic: require("../assets/fonts/PPEditorialNew-UltraboldItalic.otf"),
-    PPEditorialUltralight: require("../assets/fonts/PPEditorialNew-Ultralight.otf"),
-    PPEditorialUltralightItalic: require("../assets/fonts/PPEditorialNew-UltralightItalic.otf"),
+    Doto: require("../assets/fonts/Doto-ROND-wght.ttf"),
+    Geist: require("../assets/fonts/Geist-Regular.ttf"),
+    GeistSemiBold: require("../assets/fonts/Geist-SemiBold.ttf"),
+    GeistMono: require("../assets/fonts/GeistMono-Regular.ttf"),
+    GeistMonoMedium: require("../assets/fonts/GeistMono-Medium.ttf"),
+    NewsreaderItalic: require("../assets/fonts/Newsreader-Italic.ttf"),
   });
 
   // Configure local notifications once at boot (no-op on web).

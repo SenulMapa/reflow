@@ -8,15 +8,26 @@ import { type, spacing } from "../theme/tokens";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/** One subject as a luminous orbit: fill=coverage, marker=days-to-exam, centre=countdown. */
+/** Urgent exams (≤7 days) earn the signal-red; everything else is monochrome. */
+const URGENT_DAYS = 7;
+
+/**
+ * Nothing gauge: thin monochrome ring (coverage arc in `display`), a small
+ * day-marker, and a centred Doto countdown numeral. The arc turns signal-red
+ * ONLY when the exam is urgent — the single place this control uses the accent.
+ * `color` is accepted for API compatibility but no longer drives the arc
+ * (subjects are monochrome now; differentiate by the label beneath).
+ */
 export function OrbitRing({
-  name, color, daysToExam, coverage, lead = false, size = 78,
+  name, daysToExam, coverage, lead = false, size = 78,
 }: {
-  name: string; color: string; daysToExam: number | null;
+  name: string; color?: string; daysToExam: number | null;
   coverage?: number; lead?: boolean; size?: number;
 }) {
   const { colors } = useTheme();
-  const stroke = 6;
+  const urgent = daysToExam != null && daysToExam <= URGENT_DAYS;
+  const arc = urgent ? colors.accent : colors.display;
+  const stroke = 5;
   const r = size / 2 - stroke;
   const c = size / 2;
   const { circumference, dashOffset } = ringMetrics(coverage, r);
@@ -24,7 +35,7 @@ export function OrbitRing({
   const marker = angle == null ? null : pointOnCircle(c, c, r, angle);
 
   const dash = useSharedValue(circumference); // start empty
-  useEffect(() => { dash.value = withTiming(dashOffset, { duration: 700 }); }, [dashOffset, dash]);
+  useEffect(() => { dash.value = withTiming(dashOffset, { duration: 400 }); }, [dashOffset, dash]);
   const arcProps = useAnimatedProps(() => ({ strokeDashoffset: dash.value }));
 
   return (
@@ -33,26 +44,26 @@ export function OrbitRing({
         <Svg width={size} height={size}>
           <Circle cx={c} cy={c} r={r} stroke={colors.separator} strokeWidth={stroke} fill="none" />
           <AnimatedCircle
-            cx={c} cy={c} r={r} stroke={color} strokeWidth={stroke} fill="none"
-            strokeLinecap="round" strokeDasharray={circumference} animatedProps={arcProps}
+            cx={c} cy={c} r={r} stroke={arc} strokeWidth={stroke} fill="none"
+            strokeLinecap="butt" strokeDasharray={circumference} animatedProps={arcProps}
             transform={`rotate(-90 ${c} ${c})`}
           />
           {marker && (
-            <Circle cx={marker.x} cy={marker.y} r={4.5} fill={colors.surface} stroke={color} strokeWidth={2.5} />
+            <Circle cx={marker.x} cy={marker.y} r={3.5} fill={colors.bg} stroke={arc} strokeWidth={2} />
           )}
         </Svg>
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
-          <Text style={[type.data, { color: colors.text, fontSize: 20 }]}>
+          <Text style={[type.data, { color: urgent ? colors.accentText : colors.text, fontSize: 22 }]}>
             {daysToExam == null ? "—" : daysToExam}
           </Text>
           <Text style={[type.caption, { color: colors.textDim, fontSize: 9 }]}>DAYS</Text>
         </View>
       </View>
-      <Text style={[type.footnote, { color: colors.text, fontWeight: "700" }]}>{name}</Text>
+      <Text style={[type.caption, { color: colors.text }]}>{name}</Text>
       <Text style={[type.caption, { color: colors.textDim }]}>
-        {coverage == null ? "not started" : `${Math.round(coverage * 100)}% covered`}
+        {coverage == null ? "NOT STARTED" : `${Math.round(coverage * 100)}% COVERED`}
       </Text>
-      {lead && <View style={{ height: 2, width: 20, backgroundColor: color, borderRadius: 1 }} />}
+      {lead && <View style={{ height: 2, width: 18, backgroundColor: arc }} />}
     </View>
   );
 }

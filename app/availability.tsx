@@ -2,11 +2,12 @@ import { Link } from "expo-router";
 import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { DotField } from "../src/components/DotField";
+import { PressableScale } from "../src/components/PressableScale";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { AVAILABILITY_PRESETS } from "../src/lib/buildWeek";
-import { fmtHours } from "../src/lib/format";
 
 const DAYS = [
   { wd: 1, label: "Monday" },
@@ -38,40 +39,48 @@ export default function Availability() {
     Object.values(availability)
       .flat()
       .reduce((t, w) => t + (w.end - w.start), 0) / 60;
+  const totalDisplay = totalHours % 1 === 0 ? String(totalHours) : totalHours.toFixed(1);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Link href="/setup" asChild>
           <Pressable hitSlop={10}>
-            <Text style={[type.headline, { color: colors.accent }]}>‹ Setup</Text>
+            <Text style={[type.caption, { color: colors.textDim }]}>‹ SETUP</Text>
           </Pressable>
         </Link>
         <Text style={[type.largeTitle, { color: colors.text }]}>Availability</Text>
+        <View style={styles.statRow}>
+          <Text style={[type.numeral, { color: colors.text, fontSize: 34, lineHeight: 38 }]}>{totalDisplay}</Text>
+          <Text style={[type.caption, { color: colors.textDim }]}>HOURS / WEEK OF CANVAS</Text>
+        </View>
         <Text style={[type.callout, { color: colors.textDim, marginBottom: spacing.lg }]}>
-          When could you study? {fmtHours(totalHours)}/week of canvas — the schedule fills the slack.
+          When could you study? The schedule fills the slack.
         </Text>
 
         <View style={{ gap: spacing.sm }}>
           {DAYS.map((d) => (
             <Surface key={d.wd} style={{ gap: spacing.md }}>
-              <Text style={[type.headline, { color: colors.text }]}>{d.label}</Text>
+              <Text style={[type.mono, { color: colors.text, textTransform: "uppercase" }]}>{d.label}</Text>
               <View style={styles.presets}>
                 {AVAILABILITY_PRESETS.map((p) => {
                   const on = isOn(d.wd, p.start, p.end);
                   return (
-                    <Pressable
+                    <PressableScale
                       key={p.key}
                       onPress={() => toggle(d.wd, p)}
                       style={[
                         styles.preset,
-                        { backgroundColor: on ? colors.accent : colors.accentSoft },
+                        on
+                          ? { backgroundColor: colors.display, borderColor: colors.display }
+                          : { backgroundColor: "transparent", borderColor: colors.line2 },
                       ]}
                     >
-                      <Text style={[type.footnote, { color: on ? "#fff" : colors.accent, fontWeight: "600" }]}>
-                        {p.label}
+                      <Text style={[type.caption, { color: on ? colors.bg : colors.text }]}>
+                        {p.label.toUpperCase()}
                       </Text>
-                    </Pressable>
+                    </PressableScale>
                   );
                 })}
               </View>
@@ -87,6 +96,7 @@ export default function Availability() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
+  statRow: { flexDirection: "row", alignItems: "baseline", gap: spacing.sm, marginTop: spacing.xs },
   presets: { flexDirection: "row", gap: spacing.sm },
-  preset: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.md, alignItems: "center" },
+  preset: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
 });

@@ -3,8 +3,10 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { DotField } from "../src/components/DotField";
+import { SegmentedBar } from "../src/components/SegmentedBar";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
+import { radius, spacing, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { computePlan, subjectPerformance } from "../src/state/model";
 import { effectiveConfidence } from "../src/data/subjects";
@@ -48,10 +50,11 @@ export default function Metrics() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Link href="/" asChild>
           <Pressable hitSlop={10}>
-            <Text style={[type.headline, { color: colors.accent }]}>‹ Week</Text>
+            <Text style={[type.caption, { color: colors.textDim }]}>‹ WEEK</Text>
           </Pressable>
         </Link>
         <Text style={[type.largeTitle, { color: colors.text, marginBottom: spacing.lg }]}>Insights</Text>
@@ -59,22 +62,26 @@ export default function Metrics() {
         {/* Per-subject metrics */}
         <View style={{ gap: spacing.sm }}>
           {subjects.map((s) => {
-            const color = subjectColors[s.name] ?? colors.accent;
             const perf = subjectPerformance(state, s.id);
             const dte = daysToNearestExam(s.id, state.week.refDateISO);
+            const conf = effectiveConfidence(s);
+            const urgent = dte != null && dte <= 7;
             return (
-              <Surface key={s.id} style={{ gap: spacing.sm }}>
+              <Surface key={s.id} style={{ gap: spacing.md }}>
                 <View style={styles.cardHead}>
-                  <View style={styles.row}>
-                    <View style={[styles.dot, { backgroundColor: color }]} />
-                    <Text style={[type.headline, { color: colors.text }]}>{s.name}</Text>
+                  <Text style={[type.mono, { color: colors.text }]}>{s.name.toUpperCase()}</Text>
+                  <Text style={[type.data, { color: colors.text }]}>{fmtHours(hoursFor(s.id))}</Text>
+                </View>
+                <View style={{ gap: spacing.xs }}>
+                  <View style={styles.cardHead}>
+                    <Text style={[type.caption, { color: colors.textDim }]}>Confidence</Text>
+                    <Text style={[type.data, { color: colors.text }]}>{conf.toFixed(1)}/10</Text>
                   </View>
-                  <Text style={[type.headline, { color }]}>{fmtHours(hoursFor(s.id))}</Text>
+                  <SegmentedBar value={conf} total={10} />
                 </View>
                 <View style={styles.metricsRow}>
-                  <Metric label="Confidence" value={`${effectiveConfidence(s).toFixed(1)}/10`} colors={colors} />
                   <Metric label="Past papers" value={perf == null ? "—" : `${Math.round(perf * 100)}%`} colors={colors} />
-                  <Metric label="Next exam" value={dte == null ? "—" : `${dte}d`} colors={colors} />
+                  <Metric label="Next exam" value={dte == null ? "—" : `${dte}d`} colors={colors} accent={urgent} />
                 </View>
               </Surface>
             );
@@ -87,15 +94,18 @@ export default function Metrics() {
         </Text>
         <Surface style={{ gap: spacing.md }}>
           <View style={styles.pickRow}>
-            {subjects.map((s) => (
-              <Pressable
-                key={s.id}
-                onPress={() => setSubjectId(s.id)}
-                style={[styles.pick, { backgroundColor: subjectId === s.id ? (subjectColors[s.name] ?? colors.accent) : colors.accentSoft }]}
-              >
-                <Text style={[type.footnote, { color: subjectId === s.id ? "#fff" : colors.accent, fontWeight: "600" }]}>{s.name}</Text>
-              </Pressable>
-            ))}
+            {subjects.map((s) => {
+              const active = subjectId === s.id;
+              return (
+                <Pressable
+                  key={s.id}
+                  onPress={() => setSubjectId(s.id)}
+                  style={[styles.pick, { backgroundColor: active ? colors.display : "transparent", borderColor: colors.line2 }]}
+                >
+                  <Text style={[type.caption, { color: active ? colors.bg : colors.text }]}>{s.name}</Text>
+                </Pressable>
+              );
+            })}
           </View>
           <View style={styles.formRow}>
             <Field label="Year" value={year} onChange={setYear} colors={colors} keyboard="number-pad" />
@@ -105,8 +115,8 @@ export default function Metrics() {
             <Field label="Variant" value={variant} onChange={setVariant} colors={colors} placeholder="WMA11/01" />
             <Field label="Score %" value={score} onChange={setScore} colors={colors} keyboard="number-pad" placeholder="72" />
           </View>
-          <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: colors.accent }]}>
-            <Text style={[type.headline, { color: "#fff" }]}>Add paper</Text>
+          <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: colors.display }]}>
+            <Text style={[type.mono, { color: colors.bg }]}>ADD PAPER</Text>
           </Pressable>
         </Surface>
 
@@ -115,11 +125,11 @@ export default function Metrics() {
           {state.pastPapers.map((p) => (
             <Surface key={p.id} style={styles.paperRow}>
               <View style={{ flex: 1 }}>
-                <Text style={[type.body, { color: colors.text }]}>
-                  {nameById[p.subjectId]} · {p.month} {p.year}{p.variant ? ` · ${p.variant}` : ""}
+                <Text style={[type.mono, { color: colors.text }]}>
+                  {(nameById[p.subjectId] ?? "").toUpperCase()} · {p.month.toUpperCase()} {p.year}{p.variant ? ` · ${p.variant}` : ""}
                 </Text>
               </View>
-              <Text style={[type.headline, { color: scoreColor(p.scorePct, colors) }]}>
+              <Text style={[type.data, { color: scoreColor(p.scorePct, colors) }]}>
                 {p.scorePct == null ? "—" : `${p.scorePct}%`}
               </Text>
               <Pressable onPress={() => removePastPaper(p.id)} hitSlop={6} style={{ marginLeft: spacing.md }}>
@@ -134,18 +144,18 @@ export default function Metrics() {
   );
 }
 
-function scoreColor(pct: number | null, colors: { success: string; warning: string; danger: string; textDim: string }) {
-  if (pct == null) return colors.textDim;
-  if (pct >= 70) return colors.success;
-  if (pct >= 50) return colors.warning;
-  return colors.danger;
+function scoreColor(pct: number | null, colors: { text: string; textDim: string; accentText: string; textFaint: string }) {
+  if (pct == null) return colors.textFaint;
+  if (pct >= 70) return colors.text;
+  if (pct >= 50) return colors.textDim;
+  return colors.accentText;
 }
 
-function Metric({ label, value, colors }: { label: string; value: string; colors: { textDim: string; text: string } }) {
+function Metric({ label, value, colors, accent }: { label: string; value: string; colors: { textDim: string; text: string; accentText: string }; accent?: boolean }) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={[type.caption, { color: colors.textDim }]}>{label}</Text>
-      <Text style={[type.headline, { color: colors.text }]}>{value}</Text>
+      <Text style={[type.data, { color: accent ? colors.accentText : colors.text }]}>{value}</Text>
     </View>
   );
 }
@@ -178,14 +188,12 @@ function Field({
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  dot: { width: 10, height: 10, borderRadius: 5 },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   metricsRow: { flexDirection: "row", gap: spacing.md },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
+  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   formRow: { flexDirection: "row", gap: spacing.md },
-  field: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  saveBtn: { paddingVertical: spacing.md, borderRadius: radius.md, alignItems: "center" },
+  field: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  saveBtn: { paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
   paperRow: { flexDirection: "row", alignItems: "center" },
 });

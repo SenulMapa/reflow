@@ -2,8 +2,10 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../../src/components/Surface";
+import { DotField } from "../../src/components/DotField";
+import { SegmentedBar } from "../../src/components/SegmentedBar";
 import { useTheme } from "../../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../../src/theme/tokens";
+import { radius, spacing, type } from "../../src/theme/tokens";
 import { useStore } from "../../src/state/store";
 import { generate, isLLMConfigured } from "../../src/lib/llm";
 
@@ -67,11 +69,12 @@ export default function Practice() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <Text style={[type.largeTitle, { color: colors.text }]}>Practice</Text>
 
         {!configured && (
-          <Surface style={{ marginTop: spacing.md, backgroundColor: colors.accentSoft }}>
+          <Surface style={{ marginTop: spacing.md }}>
             <Text style={[type.footnote, { color: colors.textDim }]}>
               AI practice needs your server connected (set EXPO_PUBLIC_LLM_URL). Everything else works offline.
             </Text>
@@ -80,28 +83,37 @@ export default function Practice() {
 
         {/* Mode toggle */}
         <View style={styles.tabs}>
-          {(["quiz", "feynman"] as Mode[]).map((m) => (
-            <Pressable key={m} onPress={() => setMode(m)} style={[styles.tab, { backgroundColor: mode === m ? colors.accent : colors.surface }]}>
-              <Text style={[type.headline, { color: mode === m ? "#fff" : colors.textDim }]}>{m === "quiz" ? "Quiz me" : "Explain it back"}</Text>
-            </Pressable>
-          ))}
+          {(["quiz", "feynman"] as Mode[]).map((m) => {
+            const active = mode === m;
+            return (
+              <Pressable key={m} onPress={() => setMode(m)} style={[styles.tab, { backgroundColor: active ? colors.display : "transparent", borderColor: colors.line2 }]}>
+                <Text style={[type.mono, { color: active ? colors.bg : colors.textDim }]}>{m === "quiz" ? "QUIZ ME" : "EXPLAIN IT BACK"}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         {/* Subject + topic pickers */}
         <View style={[styles.pickRow, { marginTop: spacing.md }]}>
-          {subjects.map((s) => (
-            <Pressable key={s.id} onPress={() => { setSubjectId(s.id); setTopicId(s.topics?.[0]?.id); }} style={[styles.pick, { backgroundColor: subjectId === s.id ? (subjectColors[s.name] ?? colors.accent) : colors.accentSoft }]}>
-              <Text style={[type.footnote, { color: subjectId === s.id ? "#fff" : colors.accent, fontWeight: "600" }]}>{s.name}</Text>
-            </Pressable>
-          ))}
+          {subjects.map((s) => {
+            const active = subjectId === s.id;
+            return (
+              <Pressable key={s.id} onPress={() => { setSubjectId(s.id); setTopicId(s.topics?.[0]?.id); }} style={[styles.pick, { backgroundColor: active ? colors.display : "transparent", borderColor: colors.line2 }]}>
+                <Text style={[type.caption, { color: active ? colors.bg : colors.text }]}>{s.name}</Text>
+              </Pressable>
+            );
+          })}
         </View>
         {subject?.topics && subject.topics.length > 0 && (
           <View style={[styles.pickRow, { marginTop: spacing.sm }]}>
-            {subject.topics.map((t) => (
-              <Pressable key={t.id} onPress={() => setTopicId(t.id)} style={[styles.pickSm, { backgroundColor: topicId === t.id ? colors.accent : colors.surface, borderColor: colors.separator, borderWidth: StyleSheet.hairlineWidth }]}>
-                <Text style={[type.caption, { color: topicId === t.id ? "#fff" : colors.textDim }]}>{t.name}</Text>
-              </Pressable>
-            ))}
+            {subject.topics.map((t) => {
+              const active = topicId === t.id;
+              return (
+                <Pressable key={t.id} onPress={() => setTopicId(t.id)} style={[styles.pickSm, { backgroundColor: active ? colors.display : "transparent", borderColor: colors.line2 }]}>
+                  <Text style={[type.caption, { color: active ? colors.bg : colors.textDim }]}>{t.name}</Text>
+                </Pressable>
+              );
+            })}
           </View>
         )}
 
@@ -119,14 +131,14 @@ export default function Practice() {
         <Pressable
           disabled={loading || !configured}
           onPress={mode === "quiz" ? runQuiz : runFeynman}
-          style={[styles.go, { backgroundColor: configured ? colors.accent : colors.textFaint, opacity: loading ? 0.7 : 1 }]}
+          style={[styles.go, { backgroundColor: configured ? colors.display : colors.raised, opacity: loading ? 0.7 : 1 }]}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={[type.headline, { color: "#fff" }]}>{mode === "quiz" ? "Generate questions" : "Grade my explanation"}</Text>}
+          {loading ? <ActivityIndicator color={colors.bg} /> : <Text style={[type.mono, { color: configured ? colors.bg : colors.textFaint }]}>{mode === "quiz" ? "GENERATE QUESTIONS" : "GRADE MY EXPLANATION"}</Text>}
         </Pressable>
 
         {error && (
-          <Surface style={{ marginTop: spacing.md }}>
-            <Text style={[type.footnote, { color: colors.danger }]}>Couldn’t reach the tutor: {error}</Text>
+          <Surface style={{ marginTop: spacing.md, borderColor: colors.accentText }}>
+            <Text style={[type.footnote, { color: colors.accentText }]}>Couldn’t reach the tutor: {error}</Text>
           </Surface>
         )}
 
@@ -140,17 +152,17 @@ export default function Practice() {
                   <Text style={[type.body, { color: colors.text }]}>{i + 1}. {q.q}</Text>
                   {open ? (
                     <>
-                      <Text style={[type.callout, { color: colors.success }]}>{q.answer}</Text>
+                      <Text style={[type.callout, { color: colors.text }]}>{q.answer}</Text>
                       <Text style={[type.footnote, { color: colors.textDim }]}>Mark scheme: {q.markscheme}</Text>
                       <View style={styles.qActions}>
                         <Pressable onPress={() => logMistake(q.q, q.markscheme)} hitSlop={6}>
-                          <Text style={[type.footnote, { color: colors.accent, fontWeight: "600" }]}>+ I got this wrong → booklet</Text>
+                          <Text style={[type.caption, { color: colors.text }]}>+ WRONG → BOOKLET</Text>
                         </Pressable>
                       </View>
                     </>
                   ) : (
                     <Pressable onPress={() => setRevealed(new Set(revealed).add(i))} hitSlop={6}>
-                      <Text style={[type.footnote, { color: colors.accent, fontWeight: "600" }]}>Reveal answer</Text>
+                      <Text style={[type.caption, { color: colors.text }]}>REVEAL ANSWER</Text>
                     </Pressable>
                   )}
                 </Surface>
@@ -162,12 +174,16 @@ export default function Practice() {
         {/* Feynman result */}
         {mode === "feynman" && feynman && (
           <Surface style={{ gap: spacing.sm, marginTop: spacing.lg }}>
-            <Text style={[type.largeTitle, { color: feynman.score >= 7 ? colors.success : feynman.score >= 4 ? colors.warning : colors.danger }]}>{feynman.score}/10</Text>
+            <View style={styles.scoreRow}>
+              <Text style={[type.numeral, { color: feynman.score >= 7 ? colors.text : feynman.score >= 4 ? colors.textDim : colors.accentText }]}>{feynman.score}</Text>
+              <Text style={[type.mono, { color: colors.textFaint }]}>/10</Text>
+            </View>
+            <SegmentedBar value={feynman.score} total={10} />
             {feynman.gaps?.length > 0 && (
               <>
-                <Text style={[type.caption, { color: colors.textDim }]}>GAPS</Text>
+                <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.xs }]}>GAPS</Text>
                 {feynman.gaps.map((g, i) => (
-                  <Text key={i} style={[type.footnote, { color: colors.text }]}>• {g}</Text>
+                  <Text key={i} style={[type.footnote, { color: colors.text }]}>— {g}</Text>
                 ))}
               </>
             )}
@@ -184,11 +200,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
   tabs: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
-  tab: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.md, alignItems: "center" },
+  tab: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
-  pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
-  explain: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, padding: spacing.md, minHeight: 90, marginTop: spacing.md, textAlignVertical: "top" },
-  go: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.md, alignItems: "center", justifyContent: "center", minHeight: 50 },
+  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
+  pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1 },
+  explain: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, padding: spacing.md, minHeight: 90, marginTop: spacing.md, textAlignVertical: "top" },
+  go: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", minHeight: 50 },
   qActions: { flexDirection: "row", justifyContent: "flex-end" },
+  scoreRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
 });

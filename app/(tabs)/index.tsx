@@ -25,6 +25,7 @@ import { ReadinessSection } from "../../src/components/ReadinessSection";
 import { WhySheet, type WhyData } from "../../src/components/WhySheet";
 import { PressableScale } from "../../src/components/PressableScale";
 import { FadeInView } from "../../src/components/FadeInView";
+import { DotField } from "../../src/components/DotField";
 import { selectNowState } from "../../src/lib/nowBlock";
 import { syncSessionReminders } from "../../src/lib/notify";
 
@@ -150,17 +151,20 @@ export default function Home() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.strip}>
-          <Text style={[type.headline, { color: colors.text }]}>Reflow</Text>
+          <Text style={[type.title, { color: colors.text }]}>Reflow</Text>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <View style={[styles.pill, { backgroundColor: colors.goldSoft }]}>
-              <Text style={[type.footnote, { color: colors.gold }]}>🔥 {state.progress.streakDays}</Text>
+            <View style={[styles.pill, { borderColor: colors.line2 }]}>
+              <Text style={[type.caption, { color: colors.textDim }]}>STREAK</Text>
+              <Text style={[type.data, { color: colors.text, marginLeft: 6 }]}>{state.progress.streakDays}</Text>
             </View>
             <Link href="/rewards" asChild>
               <Pressable>
-                <View style={[styles.pill, { backgroundColor: colors.goldSoft }]}>
-                  <Text style={[type.footnote, { color: colors.gold, fontVariant: ["tabular-nums"] }]}>🪙 {state.progress.coins}</Text>
+                <View style={[styles.pill, { borderColor: colors.line2 }]}>
+                  <Text style={[type.caption, { color: colors.textDim }]}>COINS</Text>
+                  <Text style={[type.data, { color: colors.text, marginLeft: 6 }]}>{state.progress.coins}</Text>
                 </View>
               </Pressable>
             </Link>
@@ -168,7 +172,7 @@ export default function Home() {
         </View>
 
         <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.lg }]}>
-          {weekdayShort(todayISO)} · {clock.getDate()} · {greeting}
+          {weekdayShort(todayISO)} · <Text style={[type.data, { fontSize: 11, lineHeight: 14, color: colors.textDim }]}>{clock.getDate()}</Text> · {greeting}
         </Text>
 
         {/* The dominant, deterministic answer. */}
@@ -204,7 +208,8 @@ export default function Home() {
 
         {/* Coach note — the single AI line, in a fixed-height slot so it never shifts layout. */}
         <View style={[styles.coach, { borderColor: colors.separator }]}>
-          <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={2}>💬 {coachBody}</Text>
+          <Text style={[type.caption, { color: colors.textFaint, marginBottom: 4 }]}>COACH</Text>
+          <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={2}>{coachBody}</Text>
         </View>
 
         {/* Below the fold: honest momentum + garden. */}
@@ -224,15 +229,15 @@ export default function Home() {
           />
         </View>
 
-        <PressableScale onPress={() => router.push("/tutor")} style={[styles.tutor, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
-          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accentSoft, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ color: colors.accent, fontSize: 16 }}>💬</Text>
+        <PressableScale onPress={() => router.push("/tutor")} style={[styles.tutor, { backgroundColor: colors.surface, borderColor: colors.line2 }]}>
+          <View style={[styles.marker, { borderColor: colors.line2, backgroundColor: colors.raised }]}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.display }} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[type.callout, { color: colors.text, fontWeight: "700" }]}>Tutor</Text>
-            <Text style={[type.footnote, { color: colors.textDim }]}>Ask a question or think out loud.</Text>
+            <Text style={[type.headline, { color: colors.text }]}>Tutor</Text>
+            <Text style={[type.footnote, { color: colors.textDim, marginTop: 2 }]}>Ask a question or think out loud.</Text>
           </View>
-          <Text style={{ color: colors.textFaint, fontSize: 20 }}>→</Text>
+          <Text style={[type.body, { color: colors.textFaint }]}>›</Text>
         </PressableScale>
 
         <View style={{ height: spacing.xxxl }} />
@@ -247,7 +252,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg, paddingBottom: 0, ...bounded },
   strip: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  pill: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
+  pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill, borderWidth: 1 },
   coach: { marginTop: spacing.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, minHeight: 52, justifyContent: "center" },
-  tutor: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1, marginTop: spacing.lg },
+  marker: { width: 40, height: 40, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  tutor: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, marginTop: spacing.lg },
 });

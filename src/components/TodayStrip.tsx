@@ -5,13 +5,14 @@ import type { ReflowState } from "../state/model";
 import { sessionKeyOf } from "../state/model";
 import { fmtTime } from "../lib/format";
 import { useTheme } from "../theme/theme";
-import { spacing, radius, type, subjectColors } from "../theme/tokens";
+import { spacing, radius, type } from "../theme/tokens";
 import { PressableScale } from "./PressableScale";
 
 /**
- * Today at a glance — the rest of today's sessions as chips (done ✓ / now ▶ /
- * upcoming time). Tap a chip to tick it done; tap the header to open the week.
- * Reuses the plan + sessionStatus already on state; no new logic.
+ * Today at a glance — the rest of today's sessions as chips (done / now / upcoming
+ * time). Tap a chip to tick it done; tap the header to open the week. Reuses the
+ * plan + sessionStatus already on state; no new logic. Done chips invert to the
+ * display fill; the live session earns the signal-red border.
  */
 export function TodayStrip({
   state, plan, nowISO, currentKey, onToggle, onOpenWeek,
@@ -36,7 +37,10 @@ export function TodayStrip({
     <View style={{ marginTop: spacing.lg }}>
       <Pressable onPress={onOpenWeek} hitSlop={8} style={styles.header}>
         <Text style={[type.caption, { color: colors.textDim }]}>TODAY</Text>
-        <Text style={[type.caption, { color: colors.textFaint }]}>{doneCount}/{today.length} done  ›</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+          <Text style={[type.data, { color: colors.textDim }]}>{doneCount}/{today.length}</Text>
+          <Text style={[type.caption, { color: colors.textFaint }]}>DONE  ›</Text>
+        </View>
       </Pressable>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: 2 }}>
         {today.map((s) => {
@@ -45,21 +49,22 @@ export function TodayStrip({
           const done = status === "done";
           const skipped = status === "skipped";
           const isCurrent = key === currentKey;
-          const color = subjectColors[nameOf(s.subjectId)] ?? colors.accent;
           return (
             <PressableScale key={key} haptic="selection" onPress={() => onToggle(s)}
               style={[styles.chip, {
-                backgroundColor: done ? color : colors.surface,
-                borderColor: isCurrent ? color : colors.separator,
+                backgroundColor: done ? colors.display : colors.surface,
+                borderColor: isCurrent ? colors.accent : colors.separator,
                 borderWidth: isCurrent ? 2 : 1,
                 opacity: skipped ? 0.5 : 1,
               }]}>
-              <Text style={[type.footnote, { fontWeight: "700", color: done ? "#fff" : colors.text }]} numberOfLines={1}>
-                {done ? "✓ " : isCurrent ? "▶ " : ""}{nameOf(s.subjectId)}
+              <Text style={[type.mono, { color: done ? colors.bg : isCurrent ? colors.accentText : colors.text }]} numberOfLines={1}>
+                {done ? "✓ " : isCurrent ? "▶ " : ""}{nameOf(s.subjectId).toUpperCase()}
               </Text>
-              <Text style={[type.caption, { color: done ? "rgba(255,255,255,0.85)" : colors.textFaint }]}>
-                {skipped ? "skipped" : fmtTime(s.interval.start)}
-              </Text>
+              {skipped ? (
+                <Text style={[type.caption, { color: colors.textFaint }]}>SKIPPED</Text>
+              ) : (
+                <Text style={[type.data, { color: done ? colors.bg : colors.textFaint }]}>{fmtTime(s.interval.start)}</Text>
+              )}
             </PressableScale>
           );
         })}
@@ -70,5 +75,5 @@ export function TodayStrip({
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
-  chip: { minWidth: 92, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, gap: 2 },
+  chip: { minWidth: 92, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, gap: 2 },
 });

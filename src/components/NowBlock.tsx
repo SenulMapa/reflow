@@ -6,13 +6,19 @@ import { weakestTopic, unreviewedCorrections } from "../state/model";
 import { selectNowState } from "../lib/nowBlock";
 import { fmtTime, fmtHours } from "../lib/format";
 import { useTheme } from "../theme/theme";
-import { spacing, radius, type, subjectColors } from "../theme/tokens";
+import { spacing, radius, type } from "../theme/tokens";
 import { PressableScale } from "./PressableScale";
+import { Surface } from "./Surface";
 
 /**
  * The Now-block — the deterministic, dominant answer to "what do I do right now?".
  * Zero AI, zero network: it reads the placer's plan + the injected wall-clock and
  * always speaks, loudest exactly when the plan is slipping (missed) or absent.
+ *
+ * Nothing re-skin: one flat monochrome Surface for every state — emphasis comes
+ * from Doto numerals and typography, never colour. Signal-red is spent only on
+ * the states that are genuine signals: live (starting/in-progress) and overdue
+ * (missed), marked by a filled accent dot + accentText label.
  */
 export interface NowBlockProps {
   state: ReflowState;
@@ -52,39 +58,48 @@ export function NowBlock(props: NowBlockProps) {
   const today = plan.sessions.filter((s) => s.date === nowISO);
   const doneToday = today.filter((s) => state.sessionStatus[`${s.date}|${s.subjectId}|${s.interval.start}`] === "done").length;
 
-  // Per-state colour + content.
   const s = now.session;
-  const subjColor = s ? subjectColors[nameOf(s.subjectId)] ?? colors.accent : colors.accent;
 
+  // Signal-dot label row (live / overdue). `signal` lights the dot + label red.
+  const Label = ({ text, signal = false }: { text: string; signal?: boolean }) => (
+    <View style={styles.labelRow}>
+      {signal && <View style={[styles.sigDot, { backgroundColor: colors.accent }]} />}
+      <Text style={[type.caption, { color: signal ? colors.accentText : colors.textDim }]}>{text}</Text>
+    </View>
+  );
+
+  // Buttons: primary inverts (display fill + bg text); ghost is a bordered
+  // outline; danger keeps the outline but speaks in accentText.
   const Btn = ({ label, onPress, tone = "primary" }: { label: string; onPress: () => void; tone?: "primary" | "ghost" | "danger" }) => (
     <PressableScale
       haptic={tone === "primary" ? "light" : "selection"}
       onPress={onPress}
       style={[
         styles.btn,
-        tone === "primary" && { backgroundColor: "#fff" },
-        tone === "ghost" && { backgroundColor: "rgba(255,255,255,0.18)" },
-        tone === "danger" && { backgroundColor: "rgba(255,255,255,0.18)" },
+        {
+          backgroundColor: tone === "primary" ? colors.display : "transparent",
+          borderColor: tone === "primary" ? colors.display : colors.line2,
+          borderWidth: 1,
+        },
       ]}
     >
-      <Text style={[type.footnote, { fontWeight: "700", color: tone === "primary" ? subjColor : "#fff" }]}>{label}</Text>
+      <Text style={[type.mono, { color: tone === "primary" ? colors.bg : tone === "danger" ? colors.accentText : colors.text }]}>
+        {label.toUpperCase()}
+      </Text>
     </PressableScale>
   );
 
-  // Surface-tone block (done/rest/empty) uses a calm card; actionable states use accent.
-  const onAccent = now.kind !== "done" && now.kind !== "rest" && now.kind !== "empty";
-  const bg = now.kind === "missed" ? colors.warning : onAccent ? subjColor : colors.surface;
-  const fg = onAccent ? "#fff" : colors.text;
-  const dim = onAccent ? "rgba(255,255,255,0.85)" : colors.textDim;
-
   return (
-    <View style={[styles.card, { backgroundColor: bg, borderColor: colors.separator, borderWidth: onAccent ? 0 : 1 }]}>
+    <Surface style={styles.card}>
       {now.kind === "upcoming" && s && (
         <>
-          <Text style={[type.caption, { color: dim }]}>NEXT · in {humanIn(now.startsInMin ?? 0)}</Text>
-          <Text style={[styles.title, { color: fg }]}>{nameOf(s.subjectId)}</Text>
-          <Text style={[type.callout, { color: dim }]}>{fmtTime(s.interval.start)} – {fmtTime(s.interval.end)}</Text>
-          <Text style={[type.footnote, { color: dim, marginTop: 2 }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
+          <View style={styles.labelRow}>
+            <Text style={[type.caption, { color: colors.textDim }]}>NEXT · IN </Text>
+            <Text style={[type.data, { color: colors.text }]}>{humanIn(now.startsInMin ?? 0)}</Text>
+          </View>
+          <Text style={[type.title, { color: colors.text }]}>{nameOf(s.subjectId)}</Text>
+          <Text style={[type.data, { color: colors.textDim }]}>{fmtTime(s.interval.start)} – {fmtTime(s.interval.end)}</Text>
+          <Text style={[type.footnote, { color: colors.textDim, marginTop: 2 }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
           <View style={styles.row}>
             <Btn label="Start early" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
             <Btn label="Why?" tone="ghost" onPress={() => props.onWhy(s)} />
@@ -94,9 +109,9 @@ export function NowBlock(props: NowBlockProps) {
 
       {now.kind === "startingNow" && s && (
         <>
-          <Text style={[type.caption, { color: dim }]}>● STARTING NOW</Text>
-          <Text style={[styles.title, { color: fg }]}>{nameOf(s.subjectId)}</Text>
-          <Text style={[type.footnote, { color: dim }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
+          <Label text="STARTING NOW" signal />
+          <Text style={[type.title, { color: colors.text }]}>{nameOf(s.subjectId)}</Text>
+          <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
           <View style={styles.row}>
             <Btn label={`Start ${nameOf(s.subjectId)}`} onPress={() => props.onStart(s, missionOf(s.subjectId))} />
           </View>
@@ -105,9 +120,12 @@ export function NowBlock(props: NowBlockProps) {
 
       {now.kind === "inProgress" && s && (
         <>
-          <Text style={[type.caption, { color: dim }]}>● IN PROGRESS</Text>
-          <Text style={[styles.title, { color: fg }]}>{nameOf(s.subjectId)}</Text>
-          <Text style={[type.callout, { color: dim }]}>Resume · {now.remainingMin}m left</Text>
+          <Label text="IN PROGRESS" signal />
+          <Text style={[type.title, { color: colors.text }]}>{nameOf(s.subjectId)}</Text>
+          <View style={styles.labelRow}>
+            <Text style={[type.mono, { color: colors.textDim }]}>RESUME · </Text>
+            <Text style={[type.data, { color: colors.text }]}>{now.remainingMin}m left</Text>
+          </View>
           <View style={styles.row}>
             <Btn label="Resume session" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
           </View>
@@ -116,12 +134,12 @@ export function NowBlock(props: NowBlockProps) {
 
       {now.kind === "missed" && s && (
         <>
-          <Text style={[type.caption, { color: dim }]}>
-            ⚠ MISSED · {nameOf(s.subjectId)} {fmtTime(s.interval.start)}
-            {(now.missedCount ?? 0) > 1 ? `  ·  +${(now.missedCount ?? 1) - 1} more` : ""}
-          </Text>
-          <Text style={[styles.title, { color: fg }]}>Do it now?</Text>
-          <Text style={[type.footnote, { color: dim }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
+          <Label
+            text={`MISSED · ${nameOf(s.subjectId)} ${fmtTime(s.interval.start)}${(now.missedCount ?? 0) > 1 ? `  ·  +${(now.missedCount ?? 1) - 1} more` : ""}`}
+            signal
+          />
+          <Text style={[type.title, { color: colors.text }]}>Do it now?</Text>
+          <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
           <View style={styles.row}>
             <Btn label="Start now" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
             <Btn label="Mark done" tone="ghost" onPress={() => props.onMarkDone(s)} />
@@ -132,52 +150,51 @@ export function NowBlock(props: NowBlockProps) {
 
       {now.kind === "done" && (
         <>
-          <Text style={[type.caption, { color: dim }]}>✓ DONE FOR TODAY</Text>
-          <Text style={[styles.title, { color: fg }]}>{doneToday}/{today.length} sessions</Text>
-          <Text style={[type.callout, { color: dim }]}>{fmtHours(props.focusedTodayMin / 60)} focused · streak safe 🔥 {state.progress.streakDays}</Text>
+          <View style={styles.labelRow}>
+            <View style={[styles.sigDot, { backgroundColor: colors.display }]} />
+            <Text style={[type.caption, { color: colors.textDim }]}>DONE FOR TODAY</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: spacing.sm }}>
+            <Text style={[type.numeral, { color: colors.text }]}>{doneToday}/{today.length}</Text>
+            <Text style={[type.mono, { color: colors.textDim }]}>SESSIONS</Text>
+          </View>
+          <Text style={[type.data, { color: colors.textDim }]}>{fmtHours(props.focusedTodayMin / 60)} focused · streak {state.progress.streakDays}</Text>
           <View style={styles.row}>
-            <PressableScale haptic="light" onPress={props.onReflect} style={[styles.btn, { backgroundColor: colors.accentSoft }]}>
-              <Text style={[type.footnote, { fontWeight: "700", color: colors.accent }]}>Reflect on today</Text>
-            </PressableScale>
-            <PressableScale haptic="selection" onPress={props.onSeeWeek} style={[styles.btn, { backgroundColor: colors.surface, borderColor: colors.separator, borderWidth: 1 }]}>
-              <Text style={[type.footnote, { fontWeight: "700", color: colors.textDim }]}>Tomorrow →</Text>
-            </PressableScale>
+            <Btn label="Reflect on today" onPress={props.onReflect} />
+            <Btn label="Tomorrow →" tone="ghost" onPress={props.onSeeWeek} />
           </View>
         </>
       )}
 
       {now.kind === "rest" && (
         <>
-          <Text style={[type.caption, { color: dim }]}>REST DAY 🌱</Text>
-          <Text style={[styles.title, { color: fg }]}>The plan gives you today off.</Text>
-          <Text style={[type.footnote, { color: dim }]}>Recovery is part of the schedule. Back at it tomorrow.</Text>
+          <Text style={[type.caption, { color: colors.textDim }]}>REST DAY</Text>
+          <Text style={[type.title, { color: colors.text }]}>The plan gives you today off.</Text>
+          <Text style={[type.footnote, { color: colors.textDim }]}>Recovery is part of the schedule. Back at it tomorrow.</Text>
           <View style={styles.row}>
-            <PressableScale haptic="selection" onPress={props.onSeeWeek} style={[styles.btn, { backgroundColor: colors.accentSoft }]}>
-              <Text style={[type.footnote, { fontWeight: "700", color: colors.accent }]}>See the week →</Text>
-            </PressableScale>
+            <Btn label="See the week →" onPress={props.onSeeWeek} />
           </View>
         </>
       )}
 
       {now.kind === "empty" && (
         <>
-          <Text style={[type.caption, { color: dim }]}>NO SESSIONS YET</Text>
-          <Text style={[styles.title, { color: fg }]}>Nothing scheduled.</Text>
-          <Text style={[type.footnote, { color: dim }]}>Add your subjects and exams and I'll build the plan.</Text>
+          <Text style={[type.caption, { color: colors.textDim }]}>NO SESSIONS YET</Text>
+          <Text style={[type.title, { color: colors.text }]}>Nothing scheduled.</Text>
+          <Text style={[type.footnote, { color: colors.textDim }]}>Add your subjects and exams and I'll build the plan.</Text>
           <View style={styles.row}>
-            <PressableScale haptic="light" onPress={props.onSetup} style={[styles.btn, { backgroundColor: colors.accent }]}>
-              <Text style={[type.footnote, { fontWeight: "700", color: "#fff" }]}>Set up subjects</Text>
-            </PressableScale>
+            <Btn label="Set up subjects" onPress={props.onSetup} />
           </View>
         </>
       )}
-    </View>
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.xl, padding: spacing.lg, minHeight: 180, justifyContent: "center", gap: 4 },
-  title: { fontFamily: type.hero.fontFamily, fontSize: 30, lineHeight: 34, marginVertical: 2 },
+  card: { minHeight: 180, justifyContent: "center", gap: 4 },
   row: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, flexWrap: "wrap" },
-  btn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  btn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  labelRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  sigDot: { width: 7, height: 7, borderRadius: 3.5 },
 });

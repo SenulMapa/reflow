@@ -3,14 +3,14 @@ import type { WeekPlan } from "../engine/week";
 import type { ReflowState } from "../state/model";
 import { readinessForAll, type SubjectReadiness } from "../lib/readiness";
 import { useTheme } from "../theme/theme";
-import { spacing, radius, type, subjectColors } from "../theme/tokens";
+import { spacing, radius, type } from "../theme/tokens";
 import { PressableScale } from "./PressableScale";
 
 /**
  * The honest readiness surface — the "layered trust" made visible. One line per
- * subject: present-tense "Ready N%" with a direction and the single next lever,
- * or an honest "not enough signal yet" when the data is too thin. NEVER a grade,
- * never a date. Every line taps to its auditable inputs (WhySheet).
+ * subject: present-tense "READY N%" with a direction and the single next lever,
+ * or an honest "NEEDS INPUT" (signal-red) when the data is too thin. NEVER a
+ * grade, never a date. Every line taps to its auditable inputs (WhySheet).
  */
 const arrowFor = (r: SubjectReadiness): string => {
   if (r.dataStrength === "thin" || r.trend == null) return "";
@@ -45,24 +45,27 @@ export function ReadinessSection({
       <View style={{ gap: spacing.sm }}>
         {all.map((r) => {
           const name = nameOf(r.subjectId);
-          const dot = subjectColors[name] ?? colors.accent;
           return (
             <PressableScale key={r.subjectId} haptic="selection" onPress={() => onWhy(r)}
               style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
-              <View style={[styles.dot, { backgroundColor: dot }]} />
+              <View style={[styles.dot, { backgroundColor: r.enough ? colors.display : colors.accent }]} />
               {r.enough ? (
-                <Text style={[type.footnote, { color: colors.text, flex: 1 }]} numberOfLines={1}>
-                  <Text style={{ fontWeight: "700" }}>{name}</Text>
-                  {" · "}Ready {Math.round((r.readiness ?? 0) * 100)}%{arrowFor(r)}
-                  <Text style={{ color: colors.textDim }}>{` — ${leverFor(r)}`}</Text>
+                <Text style={[type.footnote, { color: colors.textDim, flex: 1 }]} numberOfLines={1}>
+                  <Text style={[type.mono, { color: colors.text }]}>{name.toUpperCase()}</Text>
+                  {"  READY "}
+                  <Text style={[type.data, { color: colors.text }]}>{Math.round((r.readiness ?? 0) * 100)}%</Text>
+                  {arrowFor(r)}
+                  {`  ${leverFor(r)}`}
                 </Text>
               ) : (
                 <Text style={[type.footnote, { color: colors.textDim, flex: 1 }]} numberOfLines={1}>
-                  <Text style={{ fontWeight: "700", color: colors.text }}>{name}</Text>
-                  {" · "}Not enough signal yet — log a past paper.
+                  <Text style={[type.mono, { color: colors.text }]}>{name.toUpperCase()}</Text>
+                  {"  "}
+                  <Text style={[type.caption, { color: colors.accentText }]}>NEEDS INPUT</Text>
+                  {"  log a past paper"}
                 </Text>
               )}
-              <Text style={{ color: colors.textFaint, fontSize: 15 }}>›</Text>
+              <Text style={[type.mono, { color: colors.textFaint }]}>›</Text>
             </PressableScale>
           );
         })}
@@ -73,5 +76,5 @@ export function ReadinessSection({
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
 });

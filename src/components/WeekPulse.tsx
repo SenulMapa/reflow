@@ -1,16 +1,17 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import type { WeekPlan } from "../engine/week";
 import type { ReflowState } from "../state/model";
 import { focusMinutesOn } from "../state/model";
 import { bankedMinutesBySubject } from "../lib/readiness";
 import { fmtHours } from "../lib/format";
 import { useTheme } from "../theme/theme";
-import { spacing, radius, type } from "../theme/tokens";
+import { spacing, type } from "../theme/tokens";
+import { SegmentedBar } from "./SegmentedBar";
 
 /**
  * Week pulse — one honest line: real focused hours vs the weekly goal, plus the
- * subject falling furthest behind its allocation, and a thin progress bar. All
- * from logged focus (never planned totals) so it can be trusted.
+ * subject falling furthest behind its allocation, and a segmented progress bar.
+ * All from logged focus (never planned totals) so it can be trusted.
  */
 export function WeekPulse({
   state, plan, weekDates, onOpenWeek,
@@ -33,24 +34,26 @@ export function WeekPulse({
     if (gapH > 0.5 && (!laggard || gapH > laggard.gapH)) laggard = { name: nameOf(a.subjectId), gapH };
   }
 
-  const pct = goalH > 0 ? Math.min(1, focusedMin / 60 / goalH) : 0;
-
   return (
     <Pressable onPress={onOpenWeek} style={{ marginTop: spacing.lg }}>
-      <Text style={[type.caption, { color: colors.textDim, marginBottom: spacing.sm }]}>THIS WEEK</Text>
-      <Text style={[type.callout, { color: colors.text }]}>
-        {fmtHours(focusedMin / 60)} / {fmtHours(goalH)}
-        {laggard ? <Text style={{ color: colors.textDim }}>{`  ·  ${laggard.name} behind ${fmtHours(laggard.gapH)}`}</Text> : null}
-        <Text style={{ color: colors.textFaint }}>{"  ›"}</Text>
-      </Text>
-      <View style={[styles.track, { backgroundColor: colors.separator }]}>
-        <View style={[styles.fill, { backgroundColor: colors.accent, width: `${pct * 100}%` }]} />
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm }}>
+        <Text style={[type.caption, { color: colors.textDim }]}>THIS WEEK</Text>
+        <Text style={[type.caption, { color: colors.textFaint }]}>›</Text>
       </View>
+      <View style={{ flexDirection: "row", alignItems: "baseline", gap: spacing.sm }}>
+        <Text style={[type.data, { color: colors.text }]}>{fmtHours(focusedMin / 60)}</Text>
+        <Text style={[type.mono, { color: colors.textFaint }]}>/ {fmtHours(goalH)}</Text>
+      </View>
+      <View style={{ marginTop: spacing.sm }}>
+        <SegmentedBar value={focusedMin / 60} total={goalH} />
+      </View>
+      {laggard ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent }} />
+          <Text style={[type.caption, { color: colors.accentText }]}>{laggard.name.toUpperCase()} BEHIND</Text>
+          <Text style={[type.data, { color: colors.accentText }]}>{fmtHours(laggard.gapH)}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  track: { height: 6, borderRadius: 3, overflow: "hidden", marginTop: spacing.sm },
-  fill: { height: "100%", borderRadius: radius.sm },
-});

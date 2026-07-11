@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/theme";
 import { spacing, radius, type } from "../theme/tokens";
 import { PressableScale } from "./PressableScale";
+import { Hairline } from "./Hairline";
 
 export type DrawerConversation = { id: string; title: string };
 
@@ -75,16 +76,16 @@ export function ChatDrawer(props: {
         <Animated.View
           style={[
             styles.panel,
-            { width: panelWidth, backgroundColor: colors.bg, borderRightColor: colors.separator, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 },
+            { width: panelWidth, backgroundColor: colors.bg, borderRightColor: colors.line2, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 },
             { transform: [{ translateX }] },
           ]}
         >
           <PressableScale onPress={() => { onNewChat(); onClose(); }} haptic="selection" style={styles.row} accessibilityLabel="New chat">
-            <Text style={[styles.icon, { color: colors.accent }]}>＋</Text>
-            <Text style={[type.callout, { color: colors.text, fontWeight: "600" }]}>New chat</Text>
+            <Text style={[styles.icon, { color: colors.text }]}>＋</Text>
+            <Text style={[type.callout, { color: colors.text }]}>New chat</Text>
           </PressableScale>
 
-          <View style={[styles.divider, { backgroundColor: colors.separator }]} />
+          <Hairline style={styles.divider} />
 
           <ScrollView style={styles.history} contentContainerStyle={{ paddingVertical: 4 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             {conversations.length === 0 ? (
@@ -100,10 +101,10 @@ export function ChatDrawer(props: {
                     onPress={() => { onSelect(c.id); onClose(); }}
                     onLongPress={() => onLongPress(c)}
                     haptic="selection"
-                    style={[styles.convRow, active && { backgroundColor: colors.accentSoft }]}
+                    style={[styles.convRow, active && { backgroundColor: colors.raised }]}
                     accessibilityLabel={c.title}
                   >
-                    <Text style={[type.footnote, { color: active ? colors.accent : colors.text, fontWeight: active ? "700" : "400" }]} numberOfLines={1}>
+                    <Text style={[type.footnote, { color: active ? colors.text : colors.textDim }]} numberOfLines={1}>
                       {c.title}
                     </Text>
                   </PressableScale>
@@ -112,7 +113,7 @@ export function ChatDrawer(props: {
             )}
           </ScrollView>
 
-          <View style={[styles.divider, { backgroundColor: colors.separator }]} />
+          <Hairline style={styles.divider} />
           <Text style={[type.caption, { color: colors.textFaint, paddingHorizontal: spacing.md }]}>
             Hold a chat to rename or delete
           </Text>
@@ -127,12 +128,11 @@ const styles = StyleSheet.create({
   scrim: { flex: 1, backgroundColor: "rgba(0,0,0,0.32)" },
   panel: {
     position: "absolute", top: 0, bottom: 0, left: 0,
-    borderRightWidth: StyleSheet.hairlineWidth, paddingHorizontal: spacing.sm,
-    shadowColor: "#000", shadowOffset: { width: 2, height: 0 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 16,
+    borderRightWidth: 1, paddingHorizontal: spacing.sm,
   },
   row: { flexDirection: "row", alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md },
   icon: { fontSize: 20, width: 22, textAlign: "center" },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.sm, marginHorizontal: 4 },
+  divider: { marginVertical: spacing.sm, marginHorizontal: 4 },
   history: { flex: 1 },
   convRow: { paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radius.md },
 });

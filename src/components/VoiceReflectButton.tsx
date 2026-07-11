@@ -48,13 +48,15 @@ export function VoiceReflectButton({ onResult }: { onResult: (text: string) => v
       <PressableScale
         haptic="light"
         onPress={busy ? undefined : recording ? stop : start}
-        style={[styles.btn, { backgroundColor: recording ? colors.danger : colors.accentSoft }]}
+        style={[styles.btn, recording
+          ? { backgroundColor: colors.display, borderColor: colors.display }
+          : { backgroundColor: "transparent", borderColor: colors.line2 }]}
       >
         {busy ? (
-          <ActivityIndicator color={colors.accent} />
+          <ActivityIndicator color={colors.text} />
         ) : (
-          <Text style={[type.callout, { color: recording ? "#fff" : colors.accent, fontWeight: "700" }]}>
-            {recording ? "◼ Stop & transcribe" : "🎙 Speak your reflection"}
+          <Text style={[type.caption, { color: recording ? colors.bg : colors.text }]}>
+            {recording ? "◼ stop & transcribe" : "speak your reflection"}
           </Text>
         )}
       </PressableScale>
@@ -65,5 +67,5 @@ export function VoiceReflectButton({ onResult }: { onResult: (text: string) => v
 }
 
 const styles = StyleSheet.create({
-  btn: { paddingVertical: spacing.md, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" },
+  btn: { paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },
 });

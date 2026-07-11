@@ -15,6 +15,7 @@ import { PressableScale } from "../src/components/PressableScale";
 import { Markdown } from "../src/components/Markdown";
 import { TypingDots } from "../src/components/TypingDots";
 import { ChatDrawer } from "../src/components/ChatDrawer";
+import { DotField } from "../src/components/DotField";
 import { haptics } from "../src/lib/haptics";
 
 const toChatMsg = (m: ChatMessage): ChatMsg => ({ role: m.role, content: m.content });
@@ -109,7 +110,7 @@ export default function Tutor() {
     if (item.role === "user") {
       return (
         <View style={styles.userRow}>
-          <View style={[styles.userBubble, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+          <View style={[styles.userBubble, { backgroundColor: colors.raised, borderColor: colors.line2 }]}>
             <Text style={[type.body, { color: colors.text }]}>{item.content}</Text>
           </View>
         </View>
@@ -123,14 +124,15 @@ export default function Tutor() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       {/* Top bar: menu (history) · Tutor · new chat */}
       <View style={styles.bar}>
-        <PressableScale haptic="selection" onPress={() => setDrawerOpen(true)} style={styles.circleBtn} accessibilityLabel="Chat history">
-          <Text style={[type.headline, { color: colors.text }]}>☰</Text>
+        <PressableScale haptic="selection" onPress={() => setDrawerOpen(true)} style={styles.navBtn} accessibilityLabel="Chat history">
+          <Text style={[type.caption, { color: colors.textDim }]}>Menu</Text>
         </PressableScale>
         <Text style={[type.headline, { color: colors.text }]}>Tutor</Text>
-        <PressableScale haptic="selection" onPress={() => { startNewConversation(); setInput(""); }} style={styles.circleBtn} accessibilityLabel="New chat">
-          <Text style={[type.body, { color: colors.textDim }]}>✎</Text>
+        <PressableScale haptic="selection" onPress={() => { startNewConversation(); setInput(""); }} style={[styles.navBtn, styles.navBtnEnd]} accessibilityLabel="New chat">
+          <Text style={[type.caption, { color: colors.textDim }]}>New</Text>
         </PressableScale>
       </View>
 
@@ -153,7 +155,7 @@ export default function Tutor() {
                   <View style={styles.chips}>
                     {SUGGESTIONS.map((sug) => (
                       <PressableScale key={sug} haptic="selection" onPress={() => setInput(sug)}
-                        style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+                        style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.line2 }]}>
                         <Text style={[type.footnote, { color: colors.text }]}>{sug}</Text>
                       </PressableScale>
                     ))}
@@ -169,11 +171,11 @@ export default function Tutor() {
           />
 
           <View style={styles.dockWrap}>
-            <View style={[styles.dock, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+            <View style={[styles.dock, { backgroundColor: colors.surface, borderColor: colors.line2 }]}>
               <TextInput
                 value={input}
                 onChangeText={setInput}
-                placeholder="Ask your tutor…"
+                placeholder="ASK YOUR TUTOR"
                 placeholderTextColor={colors.textFaint}
                 style={[type.body, styles.input, { color: colors.text }]}
                 multiline
@@ -183,8 +185,8 @@ export default function Tutor() {
                 returnKeyType="send"
               />
               <PressableScale haptic={false} onPress={send} disabled={!canSend}
-                style={[styles.sendBtn, { backgroundColor: canSend ? colors.accent : colors.accentSoft }]} accessibilityLabel="Send message">
-                <Text style={[styles.sendGlyph, { color: canSend ? "#fff" : colors.textFaint }]}>↑</Text>
+                style={[styles.sendBtn, { backgroundColor: canSend ? colors.display : colors.raised }]} accessibilityLabel="Send message">
+                <Text style={[styles.sendGlyph, { color: canSend ? colors.bg : colors.textFaint }]}>↑</Text>
               </PressableScale>
             </View>
           </View>
@@ -209,20 +211,21 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
   bar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, ...bounded },
-  circleBtn: { width: 40, height: 40, borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  navBtn: { minWidth: 52, height: 40, alignItems: "flex-start", justifyContent: "center" },
+  navBtnEnd: { alignItems: "flex-end" },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md, ...bounded },
   contentEmpty: { flexGrow: 1, justifyContent: "center" },
   aiRow: { alignItems: "stretch", marginVertical: spacing.sm },
   userRow: { alignItems: "flex-end", marginVertical: spacing.sm, paddingLeft: 48 },
-  userBubble: { borderWidth: 1, borderTopLeftRadius: 24, borderTopRightRadius: 24, borderBottomLeftRadius: 24, borderBottomRightRadius: 10, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, maxWidth: "86%" },
+  userBubble: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, maxWidth: "86%" },
   system: { textAlign: "center", paddingHorizontal: spacing.xl, marginVertical: spacing.md },
   empty: { alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.xl },
   center: { textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: spacing.sm, marginTop: spacing.md },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
   dockWrap: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, paddingTop: spacing.xs, ...bounded },
-  dock: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, borderRadius: radius.xl, borderWidth: 1, paddingLeft: spacing.lg, paddingRight: spacing.xs, paddingVertical: spacing.xs },
+  dock: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, borderRadius: radius.sm, borderWidth: 1, paddingLeft: spacing.lg, paddingRight: spacing.xs, paddingVertical: spacing.xs },
   input: { flex: 1, maxHeight: 120, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  sendBtn: { width: 38, height: 38, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", marginBottom: 2 },
+  sendBtn: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", marginBottom: 2 },
   sendGlyph: { fontSize: 19, lineHeight: 22, fontFamily: type.headline.fontFamily },
 });

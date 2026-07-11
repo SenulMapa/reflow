@@ -21,8 +21,10 @@ export function OrbitRow({
             padded={false}
             style={{
               flex: 1, paddingVertical: spacing.md, alignItems: "center",
-              borderWidth: lead ? 1.5 : (colors.bg === "#141219" ? 1 : 0),
-              borderColor: lead ? s.color : colors.separator,
+              // Monochrome: the lead subject is emphasised by an inverting
+              // display-colour border, never a subject hue. Others keep a hairline.
+              borderWidth: lead ? 1.5 : 1,
+              borderColor: lead ? colors.display : colors.separator,
             }}
           >
             <OrbitRing

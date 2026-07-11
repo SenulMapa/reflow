@@ -3,7 +3,7 @@
     "name": "Reflow",
     "slug": "reflow",
     "scheme": "reflow",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -54,7 +54,15 @@
           "photosPermission": "Reflow can save study images to your library."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "17.0"
+          }
+        }
+      ]
     ],
     "runtimeVersion": {
       "policy": "appVersion"

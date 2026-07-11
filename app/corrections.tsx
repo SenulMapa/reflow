@@ -3,8 +3,9 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { DotField } from "../src/components/DotField";
 import { useTheme } from "../src/theme/theme";
-import { radius, spacing, subjectColors, type } from "../src/theme/tokens";
+import { radius, spacing, type } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 
 export default function Corrections() {
@@ -44,10 +45,11 @@ export default function Corrections() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
+      <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Link href="/" asChild>
           <Pressable hitSlop={10}>
-            <Text style={[type.headline, { color: colors.accent }]}>‹ Week</Text>
+            <Text style={[type.caption, { color: colors.textDim }]}>‹ WEEK</Text>
           </Pressable>
         </Link>
         <Text style={[type.largeTitle, { color: colors.text }]}>Correction Booklet</Text>
@@ -58,36 +60,39 @@ export default function Corrections() {
         {/* New entry */}
         <Surface style={{ gap: spacing.md }}>
           <View style={styles.pickRow}>
-            {subjects.map((s) => (
-              <Pressable
-                key={s.id}
-                onPress={() => {
-                  setSubjectId(s.id);
-                  setTopicId(s.topics?.[0]?.id);
-                }}
-                style={[
-                  styles.pick,
-                  { backgroundColor: subjectId === s.id ? (subjectColors[s.name] ?? colors.accent) : colors.accentSoft },
-                ]}
-              >
-                <Text style={[type.footnote, { color: subjectId === s.id ? "#fff" : colors.accent, fontWeight: "600" }]}>
-                  {s.name}
-                </Text>
-              </Pressable>
-            ))}
+            {subjects.map((s) => {
+              const active = subjectId === s.id;
+              return (
+                <Pressable
+                  key={s.id}
+                  onPress={() => {
+                    setSubjectId(s.id);
+                    setTopicId(s.topics?.[0]?.id);
+                  }}
+                  style={[styles.pick, { backgroundColor: active ? colors.display : "transparent", borderColor: colors.line2 }]}
+                >
+                  <Text style={[type.caption, { color: active ? colors.bg : colors.text }]}>
+                    {s.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
 
           {subject?.topics && subject.topics.length > 0 && (
             <View style={styles.pickRow}>
-              {subject.topics.map((t) => (
-                <Pressable
-                  key={t.id}
-                  onPress={() => setTopicId(t.id)}
-                  style={[styles.pickSm, { backgroundColor: topicId === t.id ? colors.accent : colors.surface, borderColor: colors.separator, borderWidth: StyleSheet.hairlineWidth }]}
-                >
-                  <Text style={[type.caption, { color: topicId === t.id ? "#fff" : colors.textDim }]}>{t.name}</Text>
-                </Pressable>
-              ))}
+              {subject.topics.map((t) => {
+                const active = topicId === t.id;
+                return (
+                  <Pressable
+                    key={t.id}
+                    onPress={() => setTopicId(t.id)}
+                    style={[styles.pickSm, { backgroundColor: active ? colors.display : "transparent", borderColor: colors.line2 }]}
+                  >
+                    <Text style={[type.caption, { color: active ? colors.bg : colors.textDim }]}>{t.name}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
           )}
 
@@ -107,8 +112,8 @@ export default function Corrections() {
             style={[type.body, styles.input, { color: colors.text, borderColor: colors.separator }]}
             multiline
           />
-          <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: colors.accent }]}>
-            <Text style={[type.headline, { color: "#fff" }]}>Log correction</Text>
+          <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: colors.display }]}>
+            <Text style={[type.mono, { color: colors.bg }]}>LOG CORRECTION</Text>
           </Pressable>
         </Surface>
 
@@ -122,21 +127,21 @@ export default function Corrections() {
           {state.corrections.map((c) => (
             <Surface key={c.id} style={{ gap: spacing.sm }}>
               <View style={styles.cardHead}>
-                <Text style={[type.footnote, { color: subjectColors[nameById[c.subjectId] ?? ""] ?? colors.accent, fontWeight: "700" }]}>
-                  {nameById[c.subjectId]}{topicName(c.subjectId, c.topicId) ? ` · ${topicName(c.subjectId, c.topicId)}` : ""}
+                <Text style={[type.mono, { color: colors.text, flex: 1 }]}>
+                  {(nameById[c.subjectId] ?? "").toUpperCase()}{topicName(c.subjectId, c.topicId) ? ` · ${topicName(c.subjectId, c.topicId)!.toUpperCase()}` : ""}
                 </Text>
                 <Text style={[type.caption, { color: colors.textFaint }]}>{c.date}</Text>
               </View>
               <Text style={[type.body, { color: colors.text }]}>{c.mistake}</Text>
-              {!!c.fix && <Text style={[type.callout, { color: colors.success }]}>✓ {c.fix}</Text>}
+              {!!c.fix && <Text style={[type.callout, { color: colors.textDim }]}>→ {c.fix}</Text>}
               <View style={styles.cardActions}>
                 <Pressable onPress={() => toggleReviewed(c.id)} hitSlop={6}>
-                  <Text style={[type.footnote, { color: c.reviewed ? colors.success : colors.accent, fontWeight: "600" }]}>
-                    {c.reviewed ? "✓ Reviewed" : "Mark reviewed"}
+                  <Text style={[type.caption, { color: c.reviewed ? colors.textDim : colors.text }]}>
+                    {c.reviewed ? "REVIEWED ✓" : "MARK REVIEWED"}
                   </Text>
                 </Pressable>
                 <Pressable onPress={() => removeCorrection(c.id)} hitSlop={6}>
-                  <Text style={[type.footnote, { color: colors.textFaint }]}>Delete</Text>
+                  <Text style={[type.caption, { color: colors.textFaint }]}>DELETE</Text>
                 </Pressable>
               </View>
             </Surface>
@@ -152,10 +157,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill },
-  pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill },
-  input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, padding: spacing.md, minHeight: 44 },
-  saveBtn: { paddingVertical: spacing.md, borderRadius: radius.md, alignItems: "center" },
-  cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
+  pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1 },
+  input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, padding: spacing.md, minHeight: 44 },
+  saveBtn: { paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
+  cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
   cardActions: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.xs },
 });
