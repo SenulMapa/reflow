@@ -31,11 +31,9 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Doto.ttf",
-            "./assets/fonts/Geist-Regular.ttf",
-            "./assets/fonts/Geist-SemiBold.ttf",
-            "./assets/fonts/GeistMono-Regular.ttf",
-            "./assets/fonts/GeistMono-Medium.ttf",
+            "./assets/fonts/IBMPlexMono-Regular.ttf",
+            "./assets/fonts/IBMPlexMono-SemiBold.ttf",
+            "./assets/fonts/DotGothic16-Regular.ttf",
             "./assets/fonts/Newsreader-Italic.ttf"
           ]
         }

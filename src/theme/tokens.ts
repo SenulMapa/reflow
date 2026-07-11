@@ -61,9 +61,10 @@ export const palette = {
 export type Palette = Record<keyof (typeof palette)["light"], string>;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28, xxxl: 40 } as const;
-/** Nothing caps radius hard: controls 6px, cards 8px — nothing larger. Legacy
- *  `lg`/`xl` keys are kept but clamped to 8 so old call-sites can't exceed it. */
-export const radius = { sm: 6, md: 8, lg: 8, xl: 8, pill: 999 } as const;
+/** Calm-Nothing shape language: cards round to 20 ("round the corners, keep the
+ *  ruler" — the hairline stays), chips 8, the ONE primary action is a full pill.
+ *  Legacy `md` stays 8 for tiny controls; `lg`/`xl` promote to the 20 card radius. */
+export const radius = { sm: 6, md: 8, chip: 8, card: 20, lg: 20, xl: 20, pill: 999 } as const;
 
 /** iPad/large-screen: cap the content column and centre it so the reading
  *  measure stays comfortable instead of stretching edge-to-edge. */
@@ -88,16 +89,19 @@ export const bounded = { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: 
 // fatally SIGABRTs the re-signed SideStore build at launch. PS names verified via
 // fontTools against the actual .ttf name tables.
 export const fonts = {
-  doto: "Doto-Regular",
-  ui: "Geist-Regular",
-  uiSemi: "Geist-SemiBold",
-  mono: "GeistMono-Regular",
-  monoMed: "GeistMono-Medium",
-  editorial: "Newsreader-Italic",
+  // Calm-Nothing type: ONE mono family end-to-end (IBM Plex Mono — thematically
+  // exact, Nothing's own faces were inspired by 1980s IBM mainframe type) + a
+  // solid pixel face (DotGothic16) for the single hero numeral per screen.
+  doto: "DotGothic16-Regular",     // hero numerals ONLY (clock/countdown), ≥40px, full contrast
+  ui: "IBMPlexMono-Regular",       // body / UI
+  uiSemi: "IBMPlexMono-SemiBold",  // headings, card/dialog titles
+  mono: "IBMPlexMono-Regular",     // labels (uppercase, tracked), data rows
+  monoMed: "IBMPlexMono-SemiBold",
+  editorial: "Newsreader-Italic",  // page-level accent only (kept)
   // legacy aliases (kept so existing `fonts.*` refs & type roles resolve)
-  display: "Geist-SemiBold",
+  display: "IBMPlexMono-SemiBold",
   displayItalic: "Newsreader-Italic",
-  light: "Geist-Regular",
+  light: "IBMPlexMono-Regular",
   lightItalic: "Newsreader-Italic",
 } as const;
 
@@ -109,22 +113,26 @@ const t = (
 ): TextStyle => ({ fontFamily, fontSize, lineHeight, ...extra });
 
 export const type = {
-  // headings & display — Geist SemiBold (Nothing headings are sans, not serif)
-  hero:       t(fonts.uiSemi, 40, 44, { letterSpacing: -1 }),
-  largeTitle: t(fonts.uiSemi, 32, 38, { letterSpacing: -0.6 }),
-  title:      t(fonts.uiSemi, 24, 30, { letterSpacing: -0.4 }),
-  headline:   t(fonts.uiSemi, 17, 22, { letterSpacing: -0.2 }),
-  // body — Geist
-  body:       t(fonts.ui, 16, 24),
-  callout:    t(fonts.ui, 15, 21),
-  footnote:   t(fonts.ui, 13.5, 19),
-  // labels / data — Geist Mono (uppercase, tracked)
-  caption:    t(fonts.mono, 11, 14, { letterSpacing: 1.2, textTransform: "uppercase" }),
+  // headings & display — IBM Plex Mono SemiBold (monospace wants gentler tracking
+  // than a proportional face; hard negative tracking cramps mono glyphs)
+  hero:       t(fonts.uiSemi, 30, 36, { letterSpacing: -0.5 }),
+  largeTitle: t(fonts.uiSemi, 26, 32, { letterSpacing: -0.4 }),
+  title:      t(fonts.uiSemi, 22, 28, { letterSpacing: -0.3 }),
+  headline:   t(fonts.uiSemi, 16, 22, { letterSpacing: -0.1 }),
+  // body — IBM Plex Mono Regular
+  body:       t(fonts.ui, 15, 23),
+  callout:    t(fonts.ui, 14.5, 21),
+  footnote:   t(fonts.ui, 13, 19),
+  // labels / data — IBM Plex Mono (uppercase, tracked). `data` is INLINE numbers
+  // (streak/coins/counts) → Plex Mono tabular, NOT the pixel font. The dot face is
+  // reserved for the single hero numeral per screen (numeral/numeralLg/numeralHero).
+  caption:    t(fonts.mono, 11, 14, { letterSpacing: 1.4, textTransform: "uppercase" }),
   mono:       t(fonts.mono, 13, 18, { letterSpacing: 0.3 }),
-  data:       t(fonts.doto, 17, 21, { fontVariant: ["tabular-nums"] }),
-  // dot-matrix numerals — Doto (standalone numbers / % / clocks)
-  numeral:    t(fonts.doto, 40, 44, { letterSpacing: 1 }),
+  data:       t(fonts.mono, 15, 20, { fontVariant: ["tabular-nums"], letterSpacing: 0.2 }),
+  // hero numerals — DotGothic16 (standalone clock / countdown / % ONLY, ≥40px)
+  numeral:    t(fonts.doto, 44, 48, { letterSpacing: 1 }),
   numeralLg:  t(fonts.doto, 64, 66, { letterSpacing: 1 }),
+  numeralHero: t(fonts.doto, 92, 92, { letterSpacing: 2 }),
   // editorial accent — Newsreader Italic, page-level only
   serif:      t(fonts.editorial, 22, 30, { fontStyle: "italic" }),
   heroItalic: t(fonts.editorial, 34, 40, { fontStyle: "italic" }),

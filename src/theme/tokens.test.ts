@@ -10,7 +10,7 @@ const COLOR_KEYS = [
 ] as const;
 const TYPE_KEYS = [
   "hero","largeTitle","title","headline","body","callout","footnote",
-  "caption","mono","data","numeral","numeralLg","serif","heroItalic",
+  "caption","mono","data","numeral","numeralLg","numeralHero","serif","heroItalic",
 ] as const;
 
 describe("Nothing tokens", () => {
@@ -35,16 +35,17 @@ describe("Nothing tokens", () => {
     expect(palette.dark.bg).toBe("#000000");
   });
 
-  test("type scale is complete and uses the Nothing families (Doto / Geist / Newsreader)", () => {
+  test("type scale is complete and uses the Nothing families (IBM Plex Mono / DotGothic16 / Newsreader)", () => {
     for (const k of TYPE_KEYS) {
       expect(type[k], k).toBeDefined();
-      expect((type[k] as any).fontFamily, k).toMatch(/^(Doto|Geist|Newsreader)/);
+      expect((type[k] as any).fontFamily, k).toMatch(/^(IBMPlexMono|DotGothic16|Newsreader)/);
     }
-    // standalone numbers must be Doto (dot-matrix); labels must be mono
-    // (PostScript names — fonts are embedded via the expo-font config plugin)
-    expect((type.data as any).fontFamily).toBe("Doto-Regular");
-    expect((type.numeral as any).fontFamily).toBe("Doto-Regular");
-    expect((type.caption as any).fontFamily).toBe("GeistMono-Regular");
+    // hero numerals must be the pixel face (DotGothic16); inline data + labels are
+    // Plex Mono (PostScript names — fonts embedded via the expo-font config plugin)
+    expect((type.numeral as any).fontFamily).toBe("DotGothic16-Regular");
+    expect((type.numeralHero as any).fontFamily).toBe("DotGothic16-Regular");
+    expect((type.data as any).fontFamily).toBe("IBMPlexMono-Regular");
+    expect((type.caption as any).fontFamily).toBe("IBMPlexMono-Regular");
   });
 
   test("subjects are monochrome (differentiate by label, not hue)", () => {
@@ -53,9 +54,11 @@ describe("Nothing tokens", () => {
     expect(new Set(vals).size).toBe(1); // all identical → no colour coding
   });
 
-  test("radius is capped at 8 (Nothing caps cards at 8px)", () => {
-    for (const r of [radius.sm, radius.md, radius.lg, radius.xl])
-      expect(r).toBeLessThanOrEqual(8);
+  test("shape language: small controls ≤8, cards round to 20, pill is full", () => {
+    expect(radius.sm).toBeLessThanOrEqual(8);
+    expect(radius.md).toBeLessThanOrEqual(8);
+    expect(radius.chip).toBe(8);
+    expect(radius.card).toBe(20);
     expect(radius.pill).toBe(999);
   });
 
