@@ -11,6 +11,7 @@ import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { computePlan, subjectPerformance } from "../src/state/model";
 import { effectiveConfidence } from "../src/data/subjects";
+import { forecastSubject } from "../src/engine/forecast";
 import { daysToNearestExam } from "../src/lib/buildWeek";
 import { fmtHours } from "../src/lib/format";
 
@@ -66,6 +67,14 @@ export default function Metrics() {
             const perf = subjectPerformance(state, s.id);
             const dte = daysToNearestExam(s.id, state.week.refDateISO);
             const conf = effectiveConfidence(s);
+            const scored = state.pastPapers
+              .filter((p) => p.subjectId === s.id && p.scorePct != null)
+              .map((p) => ({ scorePct: p.scorePct as number, date: p.date }));
+            const fc = forecastSubject(scored, null);
+            const trendStr =
+              fc.dataStrength === "none" || fc.slopePerWeek == null
+                ? "—"
+                : `${fc.trend === "up" ? "↑" : fc.trend === "down" ? "↓" : "→"} ${fc.slopePerWeek > 0 ? "+" : ""}${fc.slopePerWeek}/wk`;
             return (
               <Surface key={s.id} style={{ gap: spacing.md }}>
                 <View style={styles.cardHead}>
@@ -81,6 +90,7 @@ export default function Metrics() {
                 </View>
                 <View style={styles.metricsRow}>
                   <Metric label="Past papers" value={perf == null ? "—" : `${Math.round(perf * 100)}%`} colors={colors} />
+                  <Metric label="Trend" value={trendStr} colors={colors} />
                   <Metric label="Next exam" value={dte == null ? "—" : `${dte}d`} colors={colors} />
                 </View>
               </Surface>
