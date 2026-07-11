@@ -13,7 +13,7 @@
 - **Framework:** Expo SDK 54, React Native 0.81.5, React 19.1.0 (downgraded from SDK 56 in v2.0.0 rebuild to kill native-module launch crashes)
 - **Routing:** expo-router (deep-link enabled)
 - **State:** Zustand v5 + AsyncStorage (offline-first, sync deferred to Supabase)
-- **Styling:** System-adaptive tokens (light warm-kraft/burnt-orange #D9541E, dark charcoal-violet #8B6FFF/amber), PP Editorial New fonts (Ultrabold/Ultralight)
+- **Styling:** "Calm Nothing OS" system-adaptive tokens (monochrome, single signal-red #D71921, OLED-black dark / warm-grey light). Fonts: **IBM Plex Mono** (SemiBold headings, Regular body/labels) + **DotGothic16** (hero numerals only) — SIL-OFL substitutes for Nothing's license-locked Ndot/NType82. Shapes: 20px hairline cards ("round the corners, keep the ruler"), one full-`Pill` primary action per screen, red = only the current action. See `docs/superpowers/specs/2026-07-11-nothing-premium-polish.md`.
 - **UI Components:** expo-haptics, react-native-reanimated 4.3.1, react-native-gesture-handler 2.31.1, safe-area-context, react-native-svg
 - **LLM:** MiniMax-M3 (via swappable `generate()` client in `/llm` Edge Function proxy)
 - **Backend:** Self-hosted Supabase (Ubuntu 24.04 box, 100.86.148.112:2222, SSH key ~/OpenClaw_key.pem)
@@ -28,18 +28,22 @@
   - `allocator.ts`: derives weekly hours via weighting (additive weakness + bounded exam boost)
   - `placer.ts`: slot-aligned placement, anchor-safe, consumes windows to prevent overlaps
   - `week.ts`: planWeek + reflow (add/remove diff for undo)
+  - `sm2.ts`: SM-2 spaced-repetition scheduler (pure, 8 tests) — powers flashcards; due-count is an allocator signal
+  - `forecast.ts`: recency-weighted grade forecast from scored past papers (pure, 6 tests) — honest "none/thin" until real signal
 - **State Model:** `src/state/model.ts` — pure reducers (no I/O); types for StudentModel, FocusSession, Reflection, PastPaper, Correction, PomodoroConfig, Plant, Reward
 - **Store:** `src/state/store.ts` — Zustand + AsyncStorage; persist v9 (state + deck + chat + pomodoro + garden + reflections)
 
-### App Screens
-- **Home** (`app/index.tsx`): tutor-arranged card deck (OrbitRow, CoachCard, Garden, Ridge momentum, agenda)
-- **Week** (`app/week.tsx`): classic schedule view, allocation chips, tap-to-reflow, undo banner
-- **Timer** (`app/timer.tsx`): focus/break phases, growth glyph (🌱→🌻), editable Pomodoro config, completion card (earn coins/plant)
-- **Reflect** (`app/reflect.tsx`): post-session text + voice (voice pending dev-build), session picker, tutor feedback
-- **Tutor** (`app/tutor.tsx`): AI chat (Grok-style bubble-less markdown), TypingDots, context from studentModel
-- **Setup** (`app/setup.tsx`): edit subjects, exams, weekly goal, confidence steppers
-- **Corrections** (`app/corrections.tsx`): per-topic confidence, weakness-driven reallocation
-- **Metrics** (`app/metrics.tsx`): Insights (confidence/performance/countdown), past-paper log
+### App Screens — IA: `Now · Plan · Practice · Progress` tabs (Fable IA; "More" retired)
+Route filenames kept stable to avoid orphaning; tabs re-labelled. Tutor + Settings are omnipresent header glyphs on Now, not tabs.
+- **Now** (`app/(tabs)/index.tsx`): 4 calm zones — hero (NowBlock, DotGothic16 time) · one coach line · Today strip · AmbientStrip (streak·garden·countdown → Progress). Hard rule: only next-action/today/ambient live here; everything else earns a tap or a contextual moment.
+- **Plan** (`app/(tabs)/week.tsx`): schedule, allocation chips, tap-to-reflow, undo; links to Availability (fixed commitments).
+- **Practice** (`app/(tabs)/practice.tsx`): AI quiz + Feynman grading; links to `/grade` (AI mark-scheme examiner) and `/corrections`.
+- **Progress** (`app/(tabs)/progress.tsx`): Readiness + Garden + "Log paper" action; tap-throughs to Insights, Rewards, Flashcards, Textbooks.
+- **Timer** (`app/timer.tsx`): giant DotGothic16 countdown hero, segmented progress, Pill start, editable Pomodoro.
+- **Cards** (`app/cards.tsx`): SM-2 spaced-repetition review — due-count hero, reveal→grade (Again/Hard/Good/Easy), AI deck generation.
+- **Grade** (`app/grade.tsx`): AI mark-scheme grading — point-by-point examiner marking, missed points → corrections.
+- **Library/Reader** (`app/library.tsx`, `app/reader.tsx`): textbook index over KB pdf `Source`s; reader with working text notes + Pencil-ink toolbar gated behind a dev build (`src/lib/pdfCapability`).
+- **Reflect / Tutor / Setup / Corrections / Metrics / Rewards / Availability**: as before, re-skinned to the calm-Nothing system.
 
 ### UI / Styling
 - **Theme:** `src/theme/theme.ts` (system-adaptive, coerced `useColorScheme()` for RN 0.85 width)

@@ -14,7 +14,15 @@ const LLM_URL = process.env.EXPO_PUBLIC_LLM_URL;
 // per-user protection comes with the multi-user phase (Supabase Auth).
 const LLM_TOKEN = process.env.EXPO_PUBLIC_LLM_TOKEN;
 
-export type LLMTask = "parse_block" | "quiz" | "grade_feynman" | "plan_deck" | "chat";
+export type LLMTask =
+  | "parse_block"
+  | "quiz"
+  | "grade_feynman"
+  | "plan_deck"
+  | "chat"
+  | "flashcards"   // generate SM-2 flashcards for a subject/topic
+  | "grade_answer" // mark a written answer against a mark scheme
+  | "briefing";    // one-line AI daily briefing
 
 export type ChatMsg = { role: "user" | "assistant" | "system"; content: string };
 

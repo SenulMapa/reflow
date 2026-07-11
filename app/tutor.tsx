@@ -110,7 +110,7 @@ export default function Tutor() {
     if (item.role === "user") {
       return (
         <View style={styles.userRow}>
-          <View style={[styles.userBubble, { backgroundColor: colors.raised, borderColor: colors.line2 }]}>
+          <View style={[styles.userBubble, { backgroundColor: colors.raised, borderColor: colors.separator }]}>
             <Text style={[type.body, { color: colors.text }]}>{item.content}</Text>
           </View>
         </View>
@@ -155,8 +155,8 @@ export default function Tutor() {
                   <View style={styles.chips}>
                     {SUGGESTIONS.map((sug) => (
                       <PressableScale key={sug} haptic="selection" onPress={() => setInput(sug)}
-                        style={[styles.chip, { backgroundColor: colors.surface, borderColor: colors.line2 }]}>
-                        <Text style={[type.footnote, { color: colors.text }]}>{sug}</Text>
+                        style={[styles.chip, { backgroundColor: "transparent", borderColor: colors.separator }]}>
+                        <Text style={[type.footnote, { color: colors.textDim }]}>{sug}</Text>
                       </PressableScale>
                     ))}
                   </View>
@@ -171,7 +171,7 @@ export default function Tutor() {
           />
 
           <View style={styles.dockWrap}>
-            <View style={[styles.dock, { backgroundColor: colors.surface, borderColor: colors.line2 }]}>
+            <View style={[styles.dock, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
               <TextInput
                 value={input}
                 onChangeText={setInput}
@@ -217,15 +217,15 @@ const styles = StyleSheet.create({
   contentEmpty: { flexGrow: 1, justifyContent: "center" },
   aiRow: { alignItems: "stretch", marginVertical: spacing.sm },
   userRow: { alignItems: "flex-end", marginVertical: spacing.sm, paddingLeft: 48 },
-  userBubble: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, maxWidth: "86%" },
+  userBubble: { borderWidth: 1, borderRadius: radius.card, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, maxWidth: "86%" },
   system: { textAlign: "center", paddingHorizontal: spacing.xl, marginVertical: spacing.md },
   empty: { alignItems: "center", gap: spacing.md, paddingHorizontal: spacing.xl },
   center: { textAlign: "center" },
   chips: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: spacing.sm, marginTop: spacing.md },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.chip, borderWidth: 1 },
   dockWrap: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, paddingTop: spacing.xs, ...bounded },
-  dock: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, borderRadius: radius.sm, borderWidth: 1, paddingLeft: spacing.lg, paddingRight: spacing.xs, paddingVertical: spacing.xs },
+  dock: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, borderRadius: radius.card, borderWidth: 1, paddingLeft: spacing.lg, paddingRight: spacing.xs, paddingVertical: spacing.xs },
   input: { flex: 1, maxHeight: 120, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  sendBtn: { width: 38, height: 38, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", marginBottom: 2 },
+  sendBtn: { width: 38, height: 38, borderRadius: radius.pill, alignItems: "center", justifyContent: "center", marginBottom: 2 },
   sendGlyph: { fontSize: 19, lineHeight: 22, fontFamily: type.headline.fontFamily },
 });

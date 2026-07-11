@@ -20,7 +20,7 @@ export function SegmentedBar({
       {Array.from({ length: segs }).map((_, i) => {
         const isFilled = i < filled;
         const color = over && isFilled ? colors.accent : isFilled ? colors.display : colors.separator;
-        return <View key={i} style={{ flex: 1, height, backgroundColor: color }} />;
+        return <View key={i} style={{ flex: 1, height, borderRadius: 2, backgroundColor: color }} />;
       })}
     </View>
   );

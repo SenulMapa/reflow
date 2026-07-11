@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { Pill } from "../src/components/Pill";
 import { DotField } from "../src/components/DotField";
 import { useTheme } from "../src/theme/theme";
 import { radius, spacing, type, bounded } from "../src/theme/tokens";
@@ -112,9 +113,7 @@ export default function Corrections() {
             style={[type.body, styles.input, { color: colors.text, borderColor: colors.separator }]}
             multiline
           />
-          <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: colors.display }]}>
-            <Text style={[type.mono, { color: colors.bg }]}>LOG CORRECTION</Text>
-          </Pressable>
+          <Pill label="Log Correction" onPress={save} disabled={!mistake.trim()} />
         </Surface>
 
         {/* List */}
@@ -160,7 +159,6 @@ const styles = StyleSheet.create({
   pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1 },
   input: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, padding: spacing.md, minHeight: 44 },
-  saveBtn: { paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
   cardHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
   cardActions: { flexDirection: "row", justifyContent: "space-between", marginTop: spacing.xs },
 });

@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { Interval } from "../engine/types";
 import type { StudySubject, Topic } from "../data/subjects";
 import * as M from "./model";
-import type { ChatMessage, Correction, FocusSession, PastPaper, Reflection, ReflowState, Source } from "./model";
+import type { Annotation, Card, ChatMessage, Correction, FocusSession, PastPaper, Reflection, ReflowState, Source } from "./model";
 import type { DeckPlan } from "../ui/deck";
 import type { PomodoroConfig } from "../lib/pomodoro";
 import type { RewardItem } from "./rewards";
@@ -59,6 +59,11 @@ interface Store {
   setPomodoro: (p: PomodoroConfig) => void;
   addPlant: (subjectId: string | undefined, date: string) => void;
   addReflection: (r: Reflection) => void;
+  addCard: (c: Card) => void;
+  removeCard: (id: string) => void;
+  reviewCard: (id: string, quality: number, todayISO: string) => void;
+  addAnnotation: (a: Annotation) => void;
+  removeAnnotation: (id: string) => void;
   reset: () => void;
 }
 
@@ -112,12 +117,25 @@ export const useStore = create<Store>()(
       setPomodoro: (p) => set(apply((s) => M.setPomodoro(s, p))),
       addPlant: (subjectId, date) => set(apply((s) => M.addPlant(s, subjectId, date))),
       addReflection: (r) => set(apply((s) => M.addReflection(s, r))),
+      addCard: (c) => set(apply((s) => M.addCard(s, c))),
+      removeCard: (id) => set(apply((s) => M.removeCard(s, id))),
+      reviewCard: (id, quality, todayISO) => set(apply((s) => M.reviewCard(s, id, quality, todayISO))),
+      addAnnotation: (a) => set(apply((s) => M.addAnnotation(s, a))),
+      removeAnnotation: (id) => set(apply((s) => M.removeAnnotation(s, id))),
       reset: () => set({ state: M.initialState(currentWeekStart()) }),
     }),
     {
       name: "reflow-state-v11",
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({ state: s.state }),
+      // Deep-merge persisted state OVER a fresh initialState so newly-added slices
+      // (e.g. `cards`) backfill to their defaults instead of arriving `undefined`
+      // and crashing selectors — preserves existing user data across schema growth.
+      merge: (persisted, current) => {
+        const p = persisted as { state?: Partial<ReflowState> } | undefined;
+        if (!p?.state) return current;
+        return { ...current, state: { ...current.state, ...p.state } };
+      },
       onRehydrateStorage: () => (persisted, error) => {
         if (!error) useStore.setState({ hydrated: true });
       },

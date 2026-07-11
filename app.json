@@ -3,7 +3,7 @@
     "name": "Reflow",
     "slug": "reflow",
     "scheme": "reflow",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -31,11 +31,9 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Doto.ttf",
-            "./assets/fonts/Geist-Regular.ttf",
-            "./assets/fonts/Geist-SemiBold.ttf",
-            "./assets/fonts/GeistMono-Regular.ttf",
-            "./assets/fonts/GeistMono-Medium.ttf",
+            "./assets/fonts/IBMPlexMono-Regular.ttf",
+            "./assets/fonts/IBMPlexMono-SemiBold.ttf",
+            "./assets/fonts/DotGothic16-Regular.ttf",
             "./assets/fonts/Newsreader-Italic.ttf"
           ]
         }

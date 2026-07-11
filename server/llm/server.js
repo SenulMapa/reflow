@@ -74,6 +74,32 @@ function promptFor(task, input) {
         'Reply with STRICT JSON only: {"reply":<your message as a single string>}. Nothing outside the JSON object.',
       user: json,
     };
+  if (task === "flashcards")
+    return {
+      system:
+        SYSTEM_IAL +
+        " Generate spaced-repetition flashcards from {subject, topic, count}. Each card tests ONE recallable " +
+        "fact/definition/formula from the IAL spec; front = question/cue, back = concise mark-scheme answer. " +
+        'Reply STRICT JSON {"cards":[{"front":string,"back":string}]}.',
+      user: json,
+    };
+  if (task === "grade_answer")
+    return {
+      system:
+        SYSTEM_IAL +
+        " Mark {question, markScheme, maxMarks, answer, commandWord} point-by-point as an examiner. " +
+        'Reply STRICT JSON {"awarded":number,"maxMarks":number,"perPoint":[{"point":string,"hit":boolean,"evidence":string}],"missed":[string],"examinerTip":string}.',
+      user: json,
+    };
+  if (task === "briefing")
+    return {
+      system:
+        SYSTEM_IAL +
+        " Write a calm 2-sentence morning briefing from {todayPlan, dueCards, weakestTopics, daysToNearestExam, lastReflection}. " +
+        "Sentence 1: the situation. Sentence 2: the single most important focus today. No hype, no emoji. " +
+        'Reply STRICT JSON {"briefing":string}.',
+      user: json,
+    };
   return { system: "Reply with strict JSON.", user: json };
 }
 

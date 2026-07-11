@@ -41,14 +41,14 @@ export function ReadinessSection({
 
   return (
     <View style={{ marginTop: spacing.lg }}>
-      <Text style={[type.caption, { color: colors.textDim, marginBottom: spacing.sm }]}>READINESS</Text>
-      <View style={{ gap: spacing.sm }}>
+      <Text style={[type.caption, { color: colors.textDim, marginBottom: spacing.md }]}>READINESS</Text>
+      <View style={{ gap: spacing.md }}>
         {all.map((r) => {
           const name = nameOf(r.subjectId);
           return (
             <PressableScale key={r.subjectId} haptic="selection" onPress={() => onWhy(r)}
-              style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
-              <View style={[styles.dot, { backgroundColor: r.enough ? colors.display : colors.accent }]} />
+              style={[styles.row, { borderColor: colors.separator }]}>
+              <View style={[styles.dot, { backgroundColor: r.enough ? colors.display : colors.textDim }]} />
               {r.enough ? (
                 <Text style={[type.footnote, { color: colors.textDim, flex: 1 }]} numberOfLines={1}>
                   <Text style={[type.mono, { color: colors.text }]}>{name.toUpperCase()}</Text>
@@ -61,7 +61,7 @@ export function ReadinessSection({
                 <Text style={[type.footnote, { color: colors.textDim, flex: 1 }]} numberOfLines={1}>
                   <Text style={[type.mono, { color: colors.text }]}>{name.toUpperCase()}</Text>
                   {"  "}
-                  <Text style={[type.caption, { color: colors.accentText }]}>NEEDS INPUT</Text>
+                  <Text style={[type.caption, { color: colors.textDim }]}>NEEDS INPUT</Text>
                   {"  log a past paper"}
                 </Text>
               )}
@@ -75,6 +75,6 @@ export function ReadinessSection({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1 },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.card, borderWidth: 1 },
   dot: { width: 6, height: 6, borderRadius: 3 },
 });

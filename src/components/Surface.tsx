@@ -14,13 +14,18 @@ import { useTheme } from "../theme/theme";
 export function Surface({
   style,
   padded = true,
+  filled = false,
   ...props
-}: ViewProps & { padded?: boolean }) {
+}: ViewProps & { padded?: boolean; filled?: boolean }) {
   const { colors } = useTheme();
 
+  // Card style A (locked): 20px rounded, 1px hairline, NO fill — "round the
+  // corners, keep the ruler". The hairline IS the brand; a filled grey blob reads
+  // as generic-wellness. `filled` is an opt-in for the rare card that must occlude
+  // the dot-field behind it.
   const base: ViewStyle = {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
+    backgroundColor: filled ? colors.surface : "transparent",
+    borderRadius: radius.card,
     padding: padded ? spacing.lg : 0,
     borderWidth: 1,
     borderColor: colors.separator,

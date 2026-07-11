@@ -53,7 +53,7 @@ export function OrbitRing({
           )}
         </Svg>
         <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
-          <Text style={[type.data, { color: urgent ? colors.accentText : colors.text, fontSize: 22 }]}>
+          <Text style={[type.numeral, { color: colors.display, fontSize: 28, lineHeight: 30 }]}>
             {daysToExam == null ? "—" : daysToExam}
           </Text>
           <Text style={[type.caption, { color: colors.textDim, fontSize: 9 }]}>DAYS</Text>

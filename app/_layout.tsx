@@ -18,11 +18,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (Platform.OS !== "web") return;
     Font.loadAsync({
-      "Doto-Regular": require("../assets/fonts/Doto.ttf"),
-      "Geist-Regular": require("../assets/fonts/Geist-Regular.ttf"),
-      "Geist-SemiBold": require("../assets/fonts/Geist-SemiBold.ttf"),
-      "GeistMono-Regular": require("../assets/fonts/GeistMono-Regular.ttf"),
-      "GeistMono-Medium": require("../assets/fonts/GeistMono-Medium.ttf"),
+      "IBMPlexMono-Regular": require("../assets/fonts/IBMPlexMono-Regular.ttf"),
+      "IBMPlexMono-SemiBold": require("../assets/fonts/IBMPlexMono-SemiBold.ttf"),
+      "DotGothic16-Regular": require("../assets/fonts/DotGothic16-Regular.ttf"),
       "Newsreader-Italic": require("../assets/fonts/Newsreader-Italic.ttf"),
     }).catch(() => {});
   }, []);

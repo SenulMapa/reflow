@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   readout: { flexDirection: "row", alignItems: "baseline", gap: spacing.xs, marginTop: 2 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   stepper: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  stepBtn: { width: 32, height: 32, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  stepBtn: { width: 32, height: 32, borderRadius: radius.pill, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   addRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  addChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
+  addChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
 });

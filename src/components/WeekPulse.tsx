@@ -48,10 +48,10 @@ export function WeekPulse({
         <SegmentedBar value={focusedMin / 60} total={goalH} />
       </View>
       {laggard ? (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md }}>
           <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent }} />
-          <Text style={[type.caption, { color: colors.accentText }]}>{laggard.name.toUpperCase()} BEHIND</Text>
-          <Text style={[type.data, { color: colors.accentText }]}>{fmtHours(laggard.gapH)}</Text>
+          <Text style={[type.caption, { color: colors.textDim }]}>{laggard.name.toUpperCase()} BEHIND</Text>
+          <Text style={[type.data, { color: colors.text }]}>{fmtHours(laggard.gapH)}</Text>
         </View>
       ) : null}
     </Pressable>

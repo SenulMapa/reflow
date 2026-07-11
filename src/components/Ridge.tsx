@@ -23,7 +23,7 @@ export function Ridge({
       </View>
       {/* Monochrome momentum trend — no gradient, no accent. The line and today
           marker read in the foreground colour; structure comes from the plot, not hue. */}
-      <Svg width="100%" height={H + 16} viewBox={`0 0 ${W} ${H + 16}`}>
+      <Svg width="100%" height={H + 16} viewBox={`0 0 ${W} ${H + 16}`} style={{ marginTop: spacing.sm }}>
         <Path d={area} fill={colors.text} fillOpacity={0.06} />
         <Path d={line} stroke={colors.text} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
         {today && <Circle cx={today.x} cy={today.y} r={4} fill={colors.surface} stroke={colors.text} strokeWidth={2.4} />}
