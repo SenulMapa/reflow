@@ -98,5 +98,5 @@ const styles = StyleSheet.create({
   scroll: { padding: spacing.lg, ...bounded },
   statRow: { flexDirection: "row", alignItems: "baseline", gap: spacing.sm, marginTop: spacing.xs },
   presets: { flexDirection: "row", gap: spacing.sm },
-  preset: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
+  preset: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.pill, borderWidth: 1, alignItems: "center" },
 });

@@ -8,6 +8,8 @@ import { useStore } from "../src/state/store";
 import { PressableScale } from "../src/components/PressableScale";
 import { DotField } from "../src/components/DotField";
 import { SegmentedBar } from "../src/components/SegmentedBar";
+import { Surface } from "../src/components/Surface";
+import { Pill } from "../src/components/Pill";
 import { haptics } from "../src/lib/haptics";
 import { EARN } from "../src/state/rewards";
 import {
@@ -108,7 +110,7 @@ export default function Timer() {
 
   // The running clock is the one live status → the digits carry the signal-red
   // while focus is ticking. Paused, break, and idle are all monochrome.
-  const clockColor = running && phase === "focus" ? colors.accent : colors.text;
+  const clockColor = running && phase === "focus" ? colors.accent : colors.display;
   const focusedToday = state.focusSessions.filter((f) => f.date === todayISO()).reduce((t, f) => t + f.minutes, 0);
   // Growth reads as filled dots (Garden language) — one per pomodoro logged today.
   const sessionsToday = state.focusSessions.filter((f) => f.date === todayISO()).length;
@@ -136,18 +138,18 @@ export default function Timer() {
               ? "The sprout wilted — that's okay. Come back and grow the next one."
               : `+1 plant in your garden · +${EARN.focus.coins} coins. Want to capture what you just did?`}
           </Text>
-          {!wilted && (
-            <PressableScale
-              haptic="light"
-              onPress={() => router.push({ pathname: "/reflect", params: { subjectId: done.subjectId ?? "", minutes: String(done.minutes), sessionKey: sessionKey ?? "" } })}
-              style={[styles.btnPrimary, { backgroundColor: colors.display }]}
-            >
-              <Text style={[type.caption, { color: colors.bg }]}>reflect on this session</Text>
+          <View style={styles.doneActions}>
+            {!wilted && (
+              <Pill
+                label="reflect on this session"
+                haptic="light"
+                onPress={() => router.push({ pathname: "/reflect", params: { subjectId: done.subjectId ?? "", minutes: String(done.minutes), sessionKey: sessionKey ?? "" } })}
+              />
+            )}
+            <PressableScale haptic="selection" onPress={() => setDone(null)} hitSlop={12}>
+              <Text style={[type.caption, { color: colors.textDim }]}>{wilted ? "try again" : "not now"}</Text>
             </PressableScale>
-          )}
-          <PressableScale haptic="selection" onPress={() => setDone(null)} style={[styles.btnSecondary, { borderColor: colors.line2 }]}>
-            <Text style={[type.caption, { color: colors.text }]}>{wilted ? "try again" : "not now"}</Text>
-          </PressableScale>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -174,7 +176,7 @@ export default function Timer() {
               {mission}
             </Text>
           )}
-          <Text style={[type.numeralLg, styles.count, { color: clockColor }]}>{fmtCountdown(remaining)}</Text>
+          <Text style={[type.numeralHero, styles.count, { color: clockColor }]}>{fmtCountdown(remaining)}</Text>
 
           <View style={styles.progress}>
             <SegmentedBar value={progress * PROGRESS_SEGMENTS} total={PROGRESS_SEGMENTS} height={8} />
@@ -194,7 +196,7 @@ export default function Timer() {
 
           {/* Duration selector — editable when not running */}
           {!running && (
-            <View style={{ alignItems: "center", gap: spacing.sm, marginTop: spacing.lg }}>
+            <Surface style={styles.configCard}>
               <View style={styles.presetRow}>
                 <Text style={[type.caption, { color: colors.textFaint, width: 52 }]}>focus</Text>
                 {FOCUS_PRESETS.map((m) => (
@@ -217,7 +219,7 @@ export default function Timer() {
                   </PressableScale>
                 ))}
               </View>
-            </View>
+            </Surface>
           )}
 
           {/* Subject */}
@@ -240,11 +242,14 @@ export default function Timer() {
         </View>
 
         <View style={styles.controls}>
-          <PressableScale haptic="selection" onPress={reset} style={[styles.btnSecondary, { borderColor: colors.line2 }]}>
+          <Pill
+            label={running ? "pause" : "start"}
+            haptic="light"
+            onPress={running ? pause : start}
+            style={styles.ctrlPrimary}
+          />
+          <PressableScale haptic="selection" onPress={reset} hitSlop={12} style={styles.resetLink}>
             <Text style={[type.caption, { color: colors.textDim }]}>reset</Text>
-          </PressableScale>
-          <PressableScale haptic="light" onPress={running ? pause : start} style={[styles.btnPrimary, styles.ctrlPrimary, { backgroundColor: colors.display }]}>
-            <Text style={[type.caption, { color: colors.bg }]}>{running ? "pause" : "start"}</Text>
           </PressableScale>
         </View>
       </View>
@@ -257,17 +262,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.lg, ...bounded },
   top: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xs },
-  count: { marginTop: spacing.sm },
-  progress: { width: "80%", marginTop: spacing.md },
+  count: { marginTop: spacing.md },
+  progress: { width: "80%", marginTop: spacing.xl },
   dotsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "center", maxWidth: 220 },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  configCard: { marginTop: spacing.xxl, gap: spacing.sm, alignItems: "center" },
   presetRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  preset: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.sm, borderWidth: 1, minWidth: 44, alignItems: "center" },
+  preset: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.pill, borderWidth: 1, minWidth: 44, alignItems: "center" },
   subjects: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, justifyContent: "center", marginTop: spacing.xl },
-  subjectChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
-  controls: { flexDirection: "row", gap: spacing.md, alignItems: "center" },
-  btnPrimary: { paddingVertical: spacing.md, paddingHorizontal: spacing.xl, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
-  ctrlPrimary: { flex: 1 },
-  btnSecondary: { paddingVertical: spacing.md, paddingHorizontal: spacing.xl, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  subjectChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
+  controls: { alignItems: "center", gap: spacing.lg },
+  ctrlPrimary: { width: "100%" },
+  resetLink: { paddingVertical: spacing.xs },
   doneWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.lg, padding: spacing.xl },
+  doneActions: { alignItems: "center", gap: spacing.lg, marginTop: spacing.sm },
 });

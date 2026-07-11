@@ -7,6 +7,8 @@ import { radius, spacing, type, bounded } from "../src/theme/tokens";
 import { useStore } from "../src/state/store";
 import { computePlan, sessionKeyOf } from "../src/state/model";
 import { PressableScale } from "../src/components/PressableScale";
+import { Surface } from "../src/components/Surface";
+import { Pill } from "../src/components/Pill";
 import { DotField } from "../src/components/DotField";
 import { haptics } from "../src/lib/haptics";
 import { fmtTime } from "../src/lib/format";
@@ -93,7 +95,7 @@ export default function Reflect() {
           </View>
 
           {/* Reflection text */}
-          <View style={[styles.field, { backgroundColor: colors.surface, borderColor: colors.separator }]}>
+          <Surface style={styles.field}>
             <TextInput
               value={text}
               onChangeText={setText}
@@ -104,11 +106,8 @@ export default function Reflect() {
               textAlignVertical="top"
               autoFocus
             />
-          </View>
-          <PressableScale haptic="light" onPress={save} disabled={!canSave}
-            style={[styles.save, { backgroundColor: canSave ? colors.display : colors.raised }]}>
-            <Text style={[type.caption, { color: canSave ? colors.bg : colors.textFaint }]}>save reflection</Text>
-          </PressableScale>
+          </Surface>
+          <Pill label="Save reflection" onPress={save} disabled={!canSave} haptic={false} style={styles.save} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -116,13 +115,13 @@ export default function Reflect() {
 }
 
 function Chip({ label, active, onPress, colors }: {
-  label: string; active: boolean; onPress: () => void; colors: { display: string; bg: string; line2: string; textDim: string };
+  label: string; active: boolean; onPress: () => void; colors: { display: string; bg: string; separator: string; textDim: string };
 }) {
   return (
     <PressableScale haptic="selection" onPress={onPress}
       style={[styles.chip, active
         ? { backgroundColor: colors.display, borderColor: colors.display }
-        : { backgroundColor: "transparent", borderColor: colors.line2 }]}>
+        : { backgroundColor: "transparent", borderColor: colors.separator }]}>
       <Text style={[type.mono, { color: active ? colors.bg : colors.textDim }]}>{label}</Text>
     </PressableScale>
   );
@@ -133,7 +132,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { padding: spacing.lg, paddingBottom: spacing.xxxl, ...bounded },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
-  field: { marginTop: spacing.lg, borderRadius: radius.md, borderWidth: 1, padding: spacing.lg },
-  save: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
+  chip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.chip, borderWidth: 1 },
+  field: { marginTop: spacing.xl },
+  save: { marginTop: spacing.xl },
 });

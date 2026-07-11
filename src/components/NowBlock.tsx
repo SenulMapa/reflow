@@ -6,8 +6,9 @@ import { weakestTopic, unreviewedCorrections } from "../state/model";
 import { selectNowState } from "../lib/nowBlock";
 import { fmtTime, fmtHours } from "../lib/format";
 import { useTheme } from "../theme/theme";
-import { spacing, radius, type } from "../theme/tokens";
+import { spacing, type } from "../theme/tokens";
 import { PressableScale } from "./PressableScale";
+import { Pill } from "./Pill";
 import { Surface } from "./Surface";
 
 /**
@@ -15,10 +16,11 @@ import { Surface } from "./Surface";
  * Zero AI, zero network: it reads the placer's plan + the injected wall-clock and
  * always speaks, loudest exactly when the plan is slipping (missed) or absent.
  *
- * Nothing re-skin: one flat monochrome Surface for every state — emphasis comes
- * from Doto numerals and typography, never colour. Signal-red is spent only on
- * the states that are genuine signals: live (starting/in-progress) and overdue
- * (missed), marked by a filled accent dot + accentText label.
+ * Calm-Nothing re-skin: one flat hairline Surface for every state. Emphasis comes
+ * from a single DotGothic16 hero numeral (the scheduled time / countdown) and the
+ * one full-pill primary action per state — never colour. Red is spent only on the
+ * live "NOW" indicator dot; the live/overdue primary action earns the signal-red
+ * pill (≤2 red at once). "MISSED"/"SKIP" are words, so they read grey.
  */
 export interface NowBlockProps {
   state: ReflowState;
@@ -60,49 +62,42 @@ export function NowBlock(props: NowBlockProps) {
 
   const s = now.session;
 
-  // Signal-dot label row (live / overdue). `signal` lights the dot + label red.
-  const Label = ({ text, signal = false }: { text: string; signal?: boolean }) => (
+  // Signal-dot label row. The dot is the ONE live-red mark; the label word itself
+  // always reads grey (so "MISSED" is information, never an alarm colour).
+  const Label = ({ text, signal = false, dotColor }: { text: string; signal?: boolean; dotColor?: string }) => (
     <View style={styles.labelRow}>
-      {signal && <View style={[styles.sigDot, { backgroundColor: colors.accent }]} />}
-      <Text style={[type.caption, { color: signal ? colors.accentText : colors.textDim }]}>{text}</Text>
+      {(signal || dotColor) && <View style={[styles.sigDot, { backgroundColor: dotColor ?? colors.accent }]} />}
+      <Text style={[type.caption, { color: colors.textDim }]}>{text}</Text>
     </View>
   );
 
-  // Buttons: primary inverts (display fill + bg text); ghost is a bordered
-  // outline; danger keeps the outline but speaks in accentText.
-  const Btn = ({ label, onPress, tone = "primary" }: { label: string; onPress: () => void; tone?: "primary" | "ghost" | "danger" }) => (
-    <PressableScale
-      haptic={tone === "primary" ? "light" : "selection"}
-      onPress={onPress}
-      style={[
-        styles.btn,
-        {
-          backgroundColor: tone === "primary" ? colors.display : "transparent",
-          borderColor: tone === "primary" ? colors.display : colors.line2,
-          borderWidth: 1,
-        },
-      ]}
-    >
-      <Text style={[type.mono, { color: tone === "primary" ? colors.bg : tone === "danger" ? colors.accentText : colors.text }]}>
-        {label.toUpperCase()}
-      </Text>
+  // Secondary actions are plain, calm mono text buttons — never a second pill,
+  // never red. One Pill per state carries the "press me" weight.
+  const TextBtn = ({ label, onPress }: { label: string; onPress: () => void }) => (
+    <PressableScale haptic="selection" onPress={onPress} style={styles.textBtn}>
+      <Text style={[type.mono, { color: colors.textDim }]}>{label.toUpperCase()}</Text>
     </PressableScale>
+  );
+
+  // The hero numeral — a single DotGothic16 clock/countdown, full contrast.
+  const Hero = ({ value, unit }: { value: string; unit?: string }) => (
+    <View style={styles.heroRow}>
+      <Text style={[type.numeral, { color: colors.text }]}>{value}</Text>
+      {unit && <Text style={[type.mono, { color: colors.textDim, marginBottom: 8 }]}>{unit}</Text>}
+    </View>
   );
 
   return (
     <Surface style={styles.card}>
       {now.kind === "upcoming" && s && (
         <>
-          <View style={styles.labelRow}>
-            <Text style={[type.caption, { color: colors.textDim }]}>NEXT · IN </Text>
-            <Text style={[type.data, { color: colors.text }]}>{humanIn(now.startsInMin ?? 0)}</Text>
-          </View>
+          <Label text={`NEXT · IN ${humanIn(now.startsInMin ?? 0)}`} />
+          <Hero value={fmtTime(s.interval.start)} />
           <Text style={[type.title, { color: colors.text }]}>{nameOf(s.subjectId)}</Text>
-          <Text style={[type.data, { color: colors.textDim }]}>{fmtTime(s.interval.start)} – {fmtTime(s.interval.end)}</Text>
           <Text style={[type.footnote, { color: colors.textDim, marginTop: 2 }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
           <View style={styles.row}>
-            <Btn label="Start early" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
-            <Btn label="Why?" tone="ghost" onPress={() => props.onWhy(s)} />
+            <Pill label="Start early" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
+            <TextBtn label="Why?" onPress={() => props.onWhy(s)} />
           </View>
         </>
       )}
@@ -110,10 +105,11 @@ export function NowBlock(props: NowBlockProps) {
       {now.kind === "startingNow" && s && (
         <>
           <Label text="STARTING NOW" signal />
+          <Hero value={fmtTime(s.interval.start)} />
           <Text style={[type.title, { color: colors.text }]}>{nameOf(s.subjectId)}</Text>
           <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
           <View style={styles.row}>
-            <Btn label={`Start ${nameOf(s.subjectId)}`} onPress={() => props.onStart(s, missionOf(s.subjectId))} />
+            <Pill label={`Start ${nameOf(s.subjectId)}`} tone="signal" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
           </View>
         </>
       )}
@@ -121,13 +117,10 @@ export function NowBlock(props: NowBlockProps) {
       {now.kind === "inProgress" && s && (
         <>
           <Label text="IN PROGRESS" signal />
+          <Hero value={`${now.remainingMin}`} unit="MIN LEFT" />
           <Text style={[type.title, { color: colors.text }]}>{nameOf(s.subjectId)}</Text>
-          <View style={styles.labelRow}>
-            <Text style={[type.mono, { color: colors.textDim }]}>RESUME · </Text>
-            <Text style={[type.data, { color: colors.text }]}>{now.remainingMin}m left</Text>
-          </View>
           <View style={styles.row}>
-            <Btn label="Resume session" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
+            <Pill label="Resume session" tone="signal" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
           </View>
         </>
       )}
@@ -135,33 +128,28 @@ export function NowBlock(props: NowBlockProps) {
       {now.kind === "missed" && s && (
         <>
           <Label
-            text={`MISSED · ${nameOf(s.subjectId)} ${fmtTime(s.interval.start)}${(now.missedCount ?? 0) > 1 ? `  ·  +${(now.missedCount ?? 1) - 1} more` : ""}`}
+            text={`MISSED · ${nameOf(s.subjectId)}${(now.missedCount ?? 0) > 1 ? `  ·  +${(now.missedCount ?? 1) - 1} more` : ""}`}
             signal
           />
+          <Hero value={fmtTime(s.interval.start)} />
           <Text style={[type.title, { color: colors.text }]}>Do it now?</Text>
           <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={1}>{missionOf(s.subjectId)}</Text>
           <View style={styles.row}>
-            <Btn label="Start now" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
-            <Btn label="Mark done" tone="ghost" onPress={() => props.onMarkDone(s)} />
-            <Btn label="Skip" tone="danger" onPress={() => props.onSkip(s)} />
+            <Pill label="Start now" onPress={() => props.onStart(s, missionOf(s.subjectId))} />
+            <TextBtn label="Mark done" onPress={() => props.onMarkDone(s)} />
+            <TextBtn label="Skip" onPress={() => props.onSkip(s)} />
           </View>
         </>
       )}
 
       {now.kind === "done" && (
         <>
-          <View style={styles.labelRow}>
-            <View style={[styles.sigDot, { backgroundColor: colors.display }]} />
-            <Text style={[type.caption, { color: colors.textDim }]}>DONE FOR TODAY</Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "baseline", gap: spacing.sm }}>
-            <Text style={[type.numeral, { color: colors.text }]}>{doneToday}/{today.length}</Text>
-            <Text style={[type.mono, { color: colors.textDim }]}>SESSIONS</Text>
-          </View>
+          <Label text="DONE FOR TODAY" dotColor={colors.display} />
+          <Hero value={`${doneToday}/${today.length}`} unit="SESSIONS" />
           <Text style={[type.data, { color: colors.textDim }]}>{fmtHours(props.focusedTodayMin / 60)} focused · streak {state.progress.streakDays}</Text>
           <View style={styles.row}>
-            <Btn label="Reflect on today" onPress={props.onReflect} />
-            <Btn label="Tomorrow →" tone="ghost" onPress={props.onSeeWeek} />
+            <Pill label="Reflect on today" onPress={props.onReflect} />
+            <TextBtn label="Tomorrow →" onPress={props.onSeeWeek} />
           </View>
         </>
       )}
@@ -169,10 +157,10 @@ export function NowBlock(props: NowBlockProps) {
       {now.kind === "rest" && (
         <>
           <Text style={[type.caption, { color: colors.textDim }]}>REST DAY</Text>
-          <Text style={[type.title, { color: colors.text }]}>The plan gives you today off.</Text>
+          <Text style={[type.title, { color: colors.text, marginTop: 2 }]}>The plan gives you today off.</Text>
           <Text style={[type.footnote, { color: colors.textDim }]}>Recovery is part of the schedule. Back at it tomorrow.</Text>
           <View style={styles.row}>
-            <Btn label="See the week →" onPress={props.onSeeWeek} />
+            <Pill label="See the week →" onPress={props.onSeeWeek} />
           </View>
         </>
       )}
@@ -180,10 +168,10 @@ export function NowBlock(props: NowBlockProps) {
       {now.kind === "empty" && (
         <>
           <Text style={[type.caption, { color: colors.textDim }]}>NO SESSIONS YET</Text>
-          <Text style={[type.title, { color: colors.text }]}>Nothing scheduled.</Text>
+          <Text style={[type.title, { color: colors.text, marginTop: 2 }]}>Nothing scheduled.</Text>
           <Text style={[type.footnote, { color: colors.textDim }]}>Add your subjects and exams and I'll build the plan.</Text>
           <View style={styles.row}>
-            <Btn label="Set up subjects" onPress={props.onSetup} />
+            <Pill label="Set up subjects" onPress={props.onSetup} />
           </View>
         </>
       )}
@@ -192,9 +180,10 @@ export function NowBlock(props: NowBlockProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { minHeight: 180, justifyContent: "center", gap: 4 },
-  row: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md, flexWrap: "wrap" },
-  btn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  card: { minHeight: 200, justifyContent: "center", gap: spacing.xs },
+  heroRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, marginVertical: 2 },
+  row: { flexDirection: "row", gap: spacing.lg, marginTop: spacing.lg, flexWrap: "wrap", alignItems: "center" },
+  textBtn: { paddingVertical: spacing.sm, paddingHorizontal: spacing.xs },
   labelRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   sigDot: { width: 7, height: 7, borderRadius: 3.5 },
 });

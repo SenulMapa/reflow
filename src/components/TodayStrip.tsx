@@ -9,10 +9,11 @@ import { spacing, radius, type } from "../theme/tokens";
 import { PressableScale } from "./PressableScale";
 
 /**
- * Today at a glance — the rest of today's sessions as chips (done / now / upcoming
- * time). Tap a chip to tick it done; tap the header to open the week. Reuses the
- * plan + sessionStatus already on state; no new logic. Done chips invert to the
- * display fill; the live session earns the signal-red border.
+ * Today at a glance — the rest of today's sessions as rounded hairline chips
+ * (done / now / upcoming time). Tap a chip to tick it done; tap the header to open
+ * the week. Reuses the plan + sessionStatus already on state; no new logic. Done
+ * chips simply fade to ~35% opacity (no badge, no fill); the single live session
+ * earns the one signal-red hairline — the only colour in the strip.
  */
 export function TodayStrip({
   state, plan, nowISO, currentKey, onToggle, onOpenWeek,
@@ -52,18 +53,16 @@ export function TodayStrip({
           return (
             <PressableScale key={key} haptic="selection" onPress={() => onToggle(s)}
               style={[styles.chip, {
-                backgroundColor: done ? colors.display : colors.surface,
                 borderColor: isCurrent ? colors.accent : colors.separator,
-                borderWidth: isCurrent ? 2 : 1,
-                opacity: skipped ? 0.5 : 1,
+                opacity: done ? 0.35 : skipped ? 0.5 : 1,
               }]}>
-              <Text style={[type.mono, { color: done ? colors.bg : isCurrent ? colors.accentText : colors.text }]} numberOfLines={1}>
+              <Text style={[type.mono, { color: colors.text }]} numberOfLines={1}>
                 {done ? "✓ " : isCurrent ? "▶ " : ""}{nameOf(s.subjectId).toUpperCase()}
               </Text>
               {skipped ? (
                 <Text style={[type.caption, { color: colors.textFaint }]}>SKIPPED</Text>
               ) : (
-                <Text style={[type.data, { color: done ? colors.bg : colors.textFaint }]}>{fmtTime(s.interval.start)}</Text>
+                <Text style={[type.data, { color: colors.textFaint }]}>{fmtTime(s.interval.start)}</Text>
               )}
             </PressableScale>
           );
@@ -75,5 +74,5 @@ export function TodayStrip({
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm },
-  chip: { minWidth: 92, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, gap: 2 },
+  chip: { minWidth: 100, paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: radius.card, borderWidth: 1, gap: 3 },
 });

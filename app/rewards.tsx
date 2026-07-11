@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { Pill } from "../src/components/Pill";
 import { Hairline } from "../src/components/Hairline";
 import { DotField } from "../src/components/DotField";
 import { PressableScale } from "../src/components/PressableScale";
@@ -60,12 +61,12 @@ export default function Rewards() {
 
         <View style={styles.statRow}>
           <View style={styles.stat}>
-            <Text style={[type.numeral, { color: colors.text, fontSize: 28, lineHeight: 32 }]}>{streakDays}</Text>
+            <Text style={[type.title, { color: colors.text }]}>{streakDays}</Text>
             <Text style={[type.caption, { color: colors.textDim }]}>DAY STREAK</Text>
           </View>
           <Hairline vertical />
           <View style={styles.stat}>
-            <Text style={[type.numeral, { color: colors.text, fontSize: 28, lineHeight: 32 }]}>{lp.level}</Text>
+            <Text style={[type.title, { color: colors.text }]}>{lp.level}</Text>
             <Text style={[type.caption, { color: colors.textDim }]}>LEVEL</Text>
           </View>
         </View>
@@ -108,8 +109,8 @@ export default function Rewards() {
           <View style={styles.addRow}>
             <TextInput value={label} onChangeText={setLabel} placeholder="e.g. boba run" placeholderTextColor={colors.textFaint} style={[type.body, styles.input, { color: colors.text, borderColor: colors.line2, flex: 1 }]} />
             <TextInput value={cost} onChangeText={setCost} placeholder="cost" keyboardType="number-pad" placeholderTextColor={colors.textFaint} style={[type.mono, styles.input, { color: colors.text, borderColor: colors.line2, width: 60 }]} />
-            <PressableScale onPress={add} hitSlop={8}><Text style={[type.caption, { color: colors.text }]}>ADD</Text></PressableScale>
           </View>
+          <Pill label="Add reward" onPress={add} />
         </Surface>
 
         {/* Ledger */}
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
   readout: { flexDirection: "row", alignItems: "baseline", gap: spacing.xs, marginTop: 2 },
   rewardRow: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  redeem: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1 },
+  redeem: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   addWrap: { gap: spacing.md },
   addRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   input: { paddingVertical: spacing.sm, borderBottomWidth: 1 },

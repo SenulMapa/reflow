@@ -16,7 +16,15 @@ const API_KEY = Deno.env.get("MINIMAX_API_KEY") ?? "";
 const BASE_URL = Deno.env.get("MINIMAX_BASE_URL") ?? "https://api.minimaxi.chat/v1";
 const MODEL = Deno.env.get("MINIMAX_MODEL") ?? "MiniMax-Text-01";
 
-type Task = "parse_block" | "quiz" | "grade_feynman";
+type Task =
+  | "parse_block"
+  | "quiz"
+  | "grade_feynman"
+  | "plan_deck"
+  | "chat"
+  | "flashcards"
+  | "grade_answer"
+  | "briefing";
 
 const SYSTEM_IAL =
   "You are an expert Edexcel/Cambridge IAL examiner. When answering or grading, " +
@@ -48,6 +56,52 @@ function promptFor(task: Task, input: unknown): { system: string; user: string }
           SYSTEM_IAL +
           " Grade the student's plain-language explanation in {topic, explanation}. Reply STRICT JSON " +
           "{\"score\":0..10,\"gaps\":[string],\"feedback\":string}.",
+        user: json,
+      };
+    case "plan_deck":
+      return {
+        system:
+          "You are the student's study tutor arranging their home dashboard for today. Input is " +
+          "{studentModel}. Reply STRICT JSON {\"cards\":[{\"type\":string,\"reason\":string}]," +
+          "\"coachNote\":{\"body\":string,\"why\":string|null}} — 1-2 warm, specific sentences in body. No prose.",
+        user: json,
+      };
+    case "chat":
+      return {
+        system:
+          SYSTEM_IAL +
+          " You are the student's IAL tutor. Input is {messages:[{role,content}], studentModel}. Reply to the " +
+          "LATEST user message, grounded in their model, light Markdown allowed. Reply STRICT JSON {\"reply\":string}.",
+        user: json,
+      };
+    case "flashcards":
+      return {
+        system:
+          SYSTEM_IAL +
+          " Generate spaced-repetition flashcards from {subject, topic, count}. Each card tests ONE " +
+          "recallable fact/definition/formula from the IAL specification — front is a question or cue, " +
+          "back is the concise correct answer (mark-scheme wording). Reply STRICT JSON " +
+          "{\"cards\":[{\"front\":string,\"back\":string}]}.",
+        user: json,
+      };
+    case "grade_answer":
+      return {
+        system:
+          SYSTEM_IAL +
+          " Mark the student's written answer against the mark scheme. Given " +
+          "{question, markScheme, maxMarks, answer, commandWord}, award marks point-by-point strictly " +
+          "as an examiner would. Reply STRICT JSON {\"awarded\":number,\"maxMarks\":number," +
+          "\"perPoint\":[{\"point\":string,\"hit\":boolean,\"evidence\":string}]," +
+          "\"missed\":[string],\"examinerTip\":string}.",
+        user: json,
+      };
+    case "briefing":
+      return {
+        system:
+          SYSTEM_IAL +
+          " Write a calm 2-sentence morning study briefing from {todayPlan, dueCards, weakestTopics, " +
+          "daysToNearestExam, lastReflection}. Sentence 1: the situation. Sentence 2: the single most " +
+          "important focus today. No hype, no emoji. Reply STRICT JSON {\"briefing\":string}.",
         user: json,
       };
   }

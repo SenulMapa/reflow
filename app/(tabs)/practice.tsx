@@ -1,7 +1,9 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../../src/components/Surface";
+import { Pill } from "../../src/components/Pill";
 import { DotField } from "../../src/components/DotField";
 import { SegmentedBar } from "../../src/components/SegmentedBar";
 import { useTheme } from "../../src/theme/theme";
@@ -15,6 +17,7 @@ interface FeynmanResp { score: number; gaps: string[]; feedback: string }
 
 export default function Practice() {
   const { colors } = useTheme();
+  const router = useRouter();
   const state = useStore((s) => s.state);
   const addCorrection = useStore((s) => s.addCorrection);
   const applyFeynmanConfidence = useStore((s) => s.applyFeynmanConfidence);
@@ -128,17 +131,21 @@ export default function Practice() {
           />
         )}
 
-        <Pressable
-          disabled={loading || !configured}
-          onPress={mode === "quiz" ? runQuiz : runFeynman}
-          style={[styles.go, { backgroundColor: configured ? colors.display : colors.raised, opacity: loading ? 0.7 : 1 }]}
-        >
-          {loading ? <ActivityIndicator color={colors.bg} /> : <Text style={[type.mono, { color: configured ? colors.bg : colors.textFaint }]}>{mode === "quiz" ? "GENERATE QUESTIONS" : "GRADE MY EXPLANATION"}</Text>}
-        </Pressable>
+        <View style={{ marginTop: spacing.lg }}>
+          <Pill
+            label={
+              mode === "quiz"
+                ? loading ? "Generating…" : "Generate questions"
+                : loading ? "Grading…" : "Grade my explanation"
+            }
+            onPress={mode === "quiz" ? runQuiz : runFeynman}
+            disabled={loading || !configured}
+          />
+        </View>
 
         {error && (
-          <Surface style={{ marginTop: spacing.md, borderColor: colors.accentText }}>
-            <Text style={[type.footnote, { color: colors.accentText }]}>Couldn’t reach the tutor: {error}</Text>
+          <Surface style={{ marginTop: spacing.md }}>
+            <Text style={[type.footnote, { color: colors.textDim }]}>Couldn’t reach the tutor: {error}</Text>
           </Surface>
         )}
 
@@ -175,7 +182,7 @@ export default function Practice() {
         {mode === "feynman" && feynman && (
           <Surface style={{ gap: spacing.sm, marginTop: spacing.lg }}>
             <View style={styles.scoreRow}>
-              <Text style={[type.numeral, { color: feynman.score >= 7 ? colors.text : feynman.score >= 4 ? colors.textDim : colors.accentText }]}>{feynman.score}</Text>
+              <Text style={[type.numeral, { color: colors.text }]}>{feynman.score}</Text>
               <Text style={[type.mono, { color: colors.textFaint }]}>/10</Text>
             </View>
             <SegmentedBar value={feynman.score} total={10} />
@@ -190,6 +197,15 @@ export default function Practice() {
             <Text style={[type.footnote, { color: colors.textDim, marginTop: spacing.xs }]}>{feynman.feedback}</Text>
           </Surface>
         )}
+
+        {/* The do→log-mistakes loop: what you got wrong lives in the booklet */}
+        <Pressable
+          onPress={() => router.push("/corrections")}
+          style={[styles.correctionsRow, { borderColor: colors.separator }]}
+        >
+          <Text style={[type.mono, { color: colors.text }]}>REVIEW CORRECTIONS BOOKLET</Text>
+          <Text style={[type.mono, { color: colors.textDim }]}>›</Text>
+        </Pressable>
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
     </SafeAreaView>
@@ -200,12 +216,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg, ...bounded },
   tabs: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.lg },
-  tab: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
+  tab: { flex: 1, paddingVertical: spacing.md, borderRadius: radius.pill, borderWidth: 1, alignItems: "center" },
   pickRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
   pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   pickSm: { paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.pill, borderWidth: 1 },
   explain: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, padding: spacing.md, minHeight: 90, marginTop: spacing.md, textAlignVertical: "top" },
-  go: { marginTop: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", minHeight: 50 },
+  correctionsRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.md, marginTop: spacing.xl, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.card, borderWidth: 1 },
   qActions: { flexDirection: "row", justifyContent: "flex-end" },
   scoreRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm },
 });

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Surface } from "../src/components/Surface";
+import { Pill } from "../src/components/Pill";
 import { DotField } from "../src/components/DotField";
 import { SegmentedBar } from "../src/components/SegmentedBar";
 import { useTheme } from "../src/theme/theme";
@@ -65,7 +66,6 @@ export default function Metrics() {
             const perf = subjectPerformance(state, s.id);
             const dte = daysToNearestExam(s.id, state.week.refDateISO);
             const conf = effectiveConfidence(s);
-            const urgent = dte != null && dte <= 7;
             return (
               <Surface key={s.id} style={{ gap: spacing.md }}>
                 <View style={styles.cardHead}>
@@ -81,7 +81,7 @@ export default function Metrics() {
                 </View>
                 <View style={styles.metricsRow}>
                   <Metric label="Past papers" value={perf == null ? "—" : `${Math.round(perf * 100)}%`} colors={colors} />
-                  <Metric label="Next exam" value={dte == null ? "—" : `${dte}d`} colors={colors} accent={urgent} />
+                  <Metric label="Next exam" value={dte == null ? "—" : `${dte}d`} colors={colors} />
                 </View>
               </Surface>
             );
@@ -115,9 +115,7 @@ export default function Metrics() {
             <Field label="Variant" value={variant} onChange={setVariant} colors={colors} placeholder="WMA11/01" />
             <Field label="Score %" value={score} onChange={setScore} colors={colors} keyboard="number-pad" placeholder="72" />
           </View>
-          <Pressable onPress={save} style={[styles.saveBtn, { backgroundColor: colors.display }]}>
-            <Text style={[type.mono, { color: colors.bg }]}>ADD PAPER</Text>
-          </Pressable>
+          <Pill label="Add paper" onPress={save} />
         </Surface>
 
         {/* Paper list */}
@@ -144,18 +142,17 @@ export default function Metrics() {
   );
 }
 
-function scoreColor(pct: number | null, colors: { text: string; textDim: string; accentText: string; textFaint: string }) {
+function scoreColor(pct: number | null, colors: { text: string; textDim: string; textFaint: string }) {
   if (pct == null) return colors.textFaint;
   if (pct >= 70) return colors.text;
-  if (pct >= 50) return colors.textDim;
-  return colors.accentText;
+  return colors.textDim;
 }
 
-function Metric({ label, value, colors, accent }: { label: string; value: string; colors: { textDim: string; text: string; accentText: string }; accent?: boolean }) {
+function Metric({ label, value, colors }: { label: string; value: string; colors: { textDim: string; text: string } }) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={[type.caption, { color: colors.textDim }]}>{label}</Text>
-      <Text style={[type.data, { color: accent ? colors.accentText : colors.text }]}>{value}</Text>
+      <Text style={[type.data, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
@@ -194,6 +191,5 @@ const styles = StyleSheet.create({
   pick: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.pill, borderWidth: 1 },
   formRow: { flexDirection: "row", gap: spacing.md },
   field: { borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  saveBtn: { paddingVertical: spacing.md, borderRadius: radius.sm, alignItems: "center" },
   paperRow: { flexDirection: "row", alignItems: "center" },
 });

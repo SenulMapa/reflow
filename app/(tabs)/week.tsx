@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -31,6 +31,7 @@ const minutes = (iv: { interval: Interval }[]) =>
 
 export default function ThisWeek() {
   const { colors } = useTheme();
+  const router = useRouter();
   const state = useStore((s) => s.state);
   const addBlock = useStore((s) => s.addBlock);
   const removeBlock = useStore((s) => s.removeBlock);
@@ -193,6 +194,18 @@ export default function ThisWeek() {
           </Pressable>
         </Surface>
 
+        {/* Availability entry — where fixed commitments live, the schedule reflows around them */}
+        <Pressable
+          onPress={() => router.push("/availability")}
+          style={[styles.availRow, { borderColor: colors.separator }]}
+        >
+          <View style={styles.reflowLabel}>
+            <View style={[styles.markDot, { backgroundColor: colors.textDim }]} />
+            <Text style={[type.mono, { color: colors.text }]}>FIXED COMMITMENTS / BLOCKS</Text>
+          </View>
+          <Text style={[type.mono, { color: colors.textDim }]}>›</Text>
+        </Pressable>
+
         {/* Allocation chips */}
         <View style={styles.chips}>
           {plan.allocations.map((a) => (
@@ -224,8 +237,8 @@ export default function ThisWeek() {
         )}
 
         {unplaced.length > 0 && (
-          <Surface style={{ marginTop: spacing.md, borderColor: colors.accentText }}>
-            <Text style={[type.footnote, { color: colors.accentText }]}>
+          <Surface style={{ marginTop: spacing.md }}>
+            <Text style={[type.footnote, { color: colors.textDim }]}>
               Couldn’t fit {unplaced.map(([id, h]) => `${fmtHours(h)} ${nameById[id] ?? id}`).join(", ")} this week.
             </Text>
           </Surface>
@@ -293,7 +306,7 @@ export default function ThisWeek() {
                         <Text style={[type.mono, { color: colors.text, textTransform: "uppercase", textDecorationLine: done ? "line-through" : "none" }]}>
                           {nameById[s.subjectId] ?? s.subjectId}
                         </Text>
-                        <Text style={[type.caption, { color: skipped ? colors.accentText : colors.textFaint }]} numberOfLines={1}>
+                        <Text style={[type.caption, { color: skipped ? colors.textDim : colors.textFaint }]} numberOfLines={1}>
                           {mission}
                         </Text>
                       </View>
@@ -322,6 +335,7 @@ const styles = StyleSheet.create({
   weekNav: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   reflowRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.md, marginTop: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.sm },
   reflowLabel: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 },
+  availRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.md, marginTop: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderRadius: radius.card, borderWidth: 1 },
   navBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: radius.sm, borderWidth: 1, alignItems: "center" },
   quickAdd: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.md, paddingVertical: spacing.md },
   input: { flex: 1, padding: 0 },
