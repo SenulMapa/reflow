@@ -42,8 +42,14 @@ export default function RootLayout() {
   // remote update loader — that launch-time loader was crashing the sideloaded
   // build via expo-updates' ErrorRecovery. Instead we check manually a few seconds
   // AFTER the app is stable, fully guarded so a failed check can never abort boot.
+  //
+  // v1.0.6: expo-updates is now fully disabled (`updates.enabled: false` in
+  // app.json) because its ErrorRecovery/anti-bricking pipeline reliably SIGABRTs
+  // on the re-signed SideStore build (confirmed via .ips: ErrorRecovery.crash()
+  // → whisper terminate handler). `Updates.isEnabled` is false, so this manual
+  // check is now inert — kept guarded so re-enabling OTA later is one config flip.
   useEffect(() => {
-    if (__DEV__) return;
+    if (__DEV__ || !Updates.isEnabled) return;
     const t = setTimeout(async () => {
       try {
         const res = await Updates.checkForUpdateAsync();
