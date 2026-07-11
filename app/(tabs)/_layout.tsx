@@ -41,10 +41,10 @@ export default function TabsLayout() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: dot() }} />
-      <Tabs.Screen name="week" options={{ title: "Week", tabBarIcon: dot() }} />
+      <Tabs.Screen name="index" options={{ title: "Now", tabBarIcon: dot() }} />
+      <Tabs.Screen name="week" options={{ title: "Plan", tabBarIcon: dot() }} />
       <Tabs.Screen name="practice" options={{ title: "Practice", tabBarIcon: dot() }} />
-      <Tabs.Screen name="more" options={{ title: "More", tabBarIcon: dot() }} />
+      <Tabs.Screen name="progress" options={{ title: "Progress", tabBarIcon: dot() }} />
     </Tabs>
   );
 }

@@ -1,6 +1,6 @@
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "../../src/theme/theme";
 import { spacing, type, radius, subjectColors, bounded } from "../../src/theme/tokens";
@@ -11,21 +11,17 @@ import {
 import type { PlacedSession } from "../../src/engine/placer/types";
 import { useStore } from "../../src/state/store";
 import { daysToNearestExam } from "../../src/lib/buildWeek";
-import { fmtHours, weekdayShort, fmtTime } from "../../src/lib/format";
-import { coverageOf, type SubjectReadiness } from "../../src/lib/readiness";
+import { weekdayShort, fmtTime } from "../../src/lib/format";
+import { coverageOf } from "../../src/lib/readiness";
 import { isLLMConfigured, planDeck } from "../../src/lib/llm";
 import { buildFallbackDeck, sanitizeDeck } from "../../src/ui/deck";
-import { OrbitRow } from "../../src/components/OrbitRow";
-import { Ridge } from "../../src/components/Ridge";
-import { Garden } from "../../src/components/Garden";
 import { NowBlock } from "../../src/components/NowBlock";
 import { TodayStrip } from "../../src/components/TodayStrip";
-import { WeekPulse } from "../../src/components/WeekPulse";
-import { ReadinessSection } from "../../src/components/ReadinessSection";
 import { WhySheet, type WhyData } from "../../src/components/WhySheet";
 import { PressableScale } from "../../src/components/PressableScale";
 import { FadeInView } from "../../src/components/FadeInView";
 import { DotField } from "../../src/components/DotField";
+import { AmbientStrip } from "../../src/components/AmbientStrip";
 import { selectNowState } from "../../src/lib/nowBlock";
 
 const shiftISO = (iso: string, d: number) => {
@@ -57,25 +53,19 @@ export default function Home() {
   const nameById = useMemo(() => Object.fromEntries(subjects.map((s) => [s.id, s.name])), [subjects]);
   const plan = useMemo(() => computePlan(state), [state]);
 
-  const weekDates = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => shiftISO(state.week.refDateISO, i)),
-    [state.week.refDateISO]);
-  const perDay = weekDates.map((d) => focusMinutesOn(state, d));
-  const totalMin = perDay.reduce((a, b) => a + b, 0);
-  const todayIndex = Math.max(0, weekDates.indexOf(todayISO));
   const focusedTodayMin = focusMinutesOn(state, todayISO);
 
+  // Nearest exam across subjects — feeds the ambient countdown cue.
   const orbitSubjects = useMemo(() =>
     subjects
       .map((s) => ({
         id: s.id, name: s.name,
         color: subjectColors[s.name] ?? colors.accent,
         daysToExam: daysToNearestExam(s.id, todayISO),
-        coverage: coverageOf(s), // real coverage now (Phase B)
+        coverage: coverageOf(s),
       }))
       .sort((a, b) => (a.daysToExam ?? 1e9) - (b.daysToExam ?? 1e9)),
     [subjects, todayISO, colors.accent]);
-  const leadId = orbitSubjects[0]?.id;
 
   // Which session (if any) is live right now — highlights it in the Today strip.
   const now = selectNowState(plan.sessions, state.sessionStatus, todayISO, nowMinutes);
@@ -116,21 +106,6 @@ export default function Home() {
     ].filter(Boolean);
     setWhy({ title: `Why ${nameById[s.subjectId]} now`, lines });
   };
-  const whyForReadiness = (r: SubjectReadiness) => {
-    const name = nameById[r.subjectId] ?? r.subjectId;
-    const lines = r.enough
-      ? [
-          `Ready ${Math.round((r.readiness ?? 0) * 100)}% — where your prep IS right now, not a predicted grade.`,
-          `${r.papers} past paper${r.papers === 1 ? "" : "s"}${r.performance != null ? ` · avg ${Math.round(r.performance * 100)}%` : ""}.`,
-          `${r.confidentTopics}/${r.totalTopics} topics confident.`,
-          `${fmtHours(r.bankedHours)} / ${fmtHours(r.allocatedHours)} banked this week.`,
-        ]
-      : [
-          "Not enough signal yet to read your readiness honestly.",
-          "Log a past paper and the number appears — no fabricated grades.",
-        ];
-    setWhy({ title: `${name} readiness`, lines });
-  };
 
   const startSession = (s: PlacedSession, mission: string) =>
     router.push({ pathname: "/timer", params: { sessionKey: sessionKeyOf(s), subjectId: s.subjectId, date: s.date, mission } });
@@ -140,33 +115,33 @@ export default function Home() {
     else markSessionDone(key, s.date);
   };
 
+  const nearestExamDays = orbitSubjects.reduce(
+    (m, o) => (o.daysToExam != null ? Math.min(m, o.daysToExam) : m),
+    Infinity,
+  );
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={["top"]}>
       <DotField />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header: wordmark + omnipresent Tutor / Settings glyphs (Fable IA) */}
         <View style={styles.strip}>
           <Text style={[type.title, { color: colors.text }]}>Reflow</Text>
           <View style={{ flexDirection: "row", gap: spacing.sm }}>
-            <View style={[styles.pill, { borderColor: colors.line2 }]}>
-              <Text style={[type.caption, { color: colors.textDim }]}>STREAK</Text>
-              <Text style={[type.data, { color: colors.text, marginLeft: 6 }]}>{state.progress.streakDays}</Text>
-            </View>
-            <Link href="/rewards" asChild>
-              <Pressable>
-                <View style={[styles.pill, { borderColor: colors.line2 }]}>
-                  <Text style={[type.caption, { color: colors.textDim }]}>COINS</Text>
-                  <Text style={[type.data, { color: colors.text, marginLeft: 6 }]}>{state.progress.coins}</Text>
-                </View>
-              </Pressable>
-            </Link>
+            <PressableScale haptic="light" onPress={() => router.push("/tutor")} style={[styles.glyph, { borderColor: colors.line2 }]}>
+              <Text style={[type.mono, { color: colors.text }]}>AI</Text>
+            </PressableScale>
+            <PressableScale haptic="light" onPress={() => router.push("/setup")} style={[styles.glyph, { borderColor: colors.line2 }]}>
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.display }} />
+            </PressableScale>
           </View>
         </View>
 
         <Text style={[type.caption, { color: colors.textDim, marginTop: spacing.lg }]}>
-          {weekdayShort(todayISO)} · <Text style={[type.data, { fontSize: 11, lineHeight: 14, color: colors.textDim }]}>{clock.getDate()}</Text> · {greeting}
+          {weekdayShort(todayISO)} · {clock.getDate()} · {greeting}
         </Text>
 
-        {/* The dominant, deterministic answer. */}
+        {/* ZONE 1 — the hero: the app's answer to "what now". */}
         <FadeInView style={{ marginTop: spacing.md }}>
           <NowBlock
             state={state}
@@ -184,52 +159,23 @@ export default function Home() {
           />
         </FadeInView>
 
-        <TodayStrip state={state} plan={plan} nowISO={todayISO} currentKey={currentKey}
-          onToggle={toggleDone} onOpenWeek={() => router.push("/week")} />
-
-        <WeekPulse state={state} plan={plan} weekDates={weekDates} onOpenWeek={() => router.push("/week")} />
-
-        <ReadinessSection state={state} plan={plan} weekDates={weekDates} onWhy={whyForReadiness} />
-
-        {orbitSubjects.length > 0 && (
-          <View style={{ marginTop: spacing.lg }}>
-            <OrbitRow subjects={orbitSubjects} leadId={leadId} />
-          </View>
-        )}
-
-        {/* Coach note — the single AI line, in a fixed-height slot so it never shifts layout. */}
-        <View style={[styles.coach, { borderColor: colors.separator }]}>
+        {/* ZONE 2 — the one coach line. */}
+        <View style={styles.coach}>
           <Text style={[type.caption, { color: colors.textFaint, marginBottom: 4 }]}>COACH</Text>
           <Text style={[type.footnote, { color: colors.textDim }]} numberOfLines={2}>{coachBody}</Text>
         </View>
 
-        {/* Below the fold: honest momentum + garden. */}
-        <View style={{ marginTop: spacing.lg }}>
-          <Ridge
-            values={perDay}
-            labels={weekDates.map((d) => weekdayShort(d)[0]!)}
-            todayIndex={todayIndex}
-            totalLabel={`${fmtHours(totalMin / 60)} focused`}
-            subLabel="this week"
-          />
-        </View>
-        <View style={{ marginTop: spacing.lg }}>
-          <Garden
-            plants={state.garden.slice(-12).map((p) => p.kind)}
-            caption={state.garden.length ? `${state.garden.length} grown` : "grows as you focus"}
-          />
-        </View>
+        {/* ZONE 3 — today, compressed. */}
+        <TodayStrip state={state} plan={plan} nowISO={todayISO} currentKey={currentKey}
+          onToggle={toggleDone} onOpenWeek={() => router.push("/week")} />
 
-        <PressableScale onPress={() => router.push("/tutor")} style={[styles.tutor, { backgroundColor: colors.surface, borderColor: colors.line2 }]}>
-          <View style={[styles.marker, { borderColor: colors.line2, backgroundColor: colors.raised }]}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.display }} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[type.headline, { color: colors.text }]}>Tutor</Text>
-            <Text style={[type.footnote, { color: colors.textDim, marginTop: 2 }]}>Ask a question or think out loud.</Text>
-          </View>
-          <Text style={[type.body, { color: colors.textFaint }]}>›</Text>
-        </PressableScale>
+        {/* ZONE 4 — ambient cue (streak · garden · countdown) → Progress. */}
+        <AmbientStrip
+          streakDays={state.progress.streakDays}
+          plantsGrown={state.garden.length}
+          daysToExam={Number.isFinite(nearestExamDays) ? nearestExamDays : null}
+          onPress={() => router.push("/progress")}
+        />
 
         <View style={{ height: spacing.xxxl }} />
       </ScrollView>
@@ -243,8 +189,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg, paddingBottom: 0, ...bounded },
   strip: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  pill: { flexDirection: "row", alignItems: "center", paddingHorizontal: spacing.md, paddingVertical: 5, borderRadius: radius.pill, borderWidth: 1 },
-  coach: { marginTop: spacing.lg, paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, minHeight: 52, justifyContent: "center" },
-  marker: { width: 40, height: 40, borderRadius: radius.sm, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  tutor: { flexDirection: "row", alignItems: "center", gap: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, marginTop: spacing.lg },
+  glyph: { width: 40, height: 40, borderRadius: radius.pill, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  coach: { marginTop: spacing.lg, minHeight: 40, justifyContent: "center" },
 });

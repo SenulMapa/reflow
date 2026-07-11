@@ -10,6 +10,7 @@ import { DEMO_SUBJECTS, type StudySubject, type Topic } from "../data/subjects";
 import { EARN, levelForXp, type Progress, type RewardItem } from "./rewards";
 import { DEFAULT_POMODORO, type PomodoroConfig } from "../lib/pomodoro";
 import { nudgeConfidence } from "../lib/signals";
+import { review as sm2Review, type Sm2State } from "../engine/sm2";
 import { reflowRemaining } from "../lib/selfHeal";
 import type { DeckPlan } from "../ui/deck";
 
@@ -108,6 +109,21 @@ export function classifySource(uri: string): Source["type"] {
   return "link";
 }
 
+/** A spaced-repetition flashcard (SM-2 scheduled). */
+export interface Card {
+  id: string;
+  subjectId: string;
+  topicId?: string;
+  /** basic front/back, cloze deletion, or a formula card. */
+  type: "basic" | "cloze" | "formula";
+  front: string;
+  back: string;
+  /** KB source it was generated/extracted from, if any. */
+  sourceId?: string;
+  createdAt: string;
+  sm2: Sm2State;
+}
+
 /** A single message in the tutor chat thread. */
 export type ChatMessage = {
   id: string;
@@ -146,6 +162,8 @@ export interface ReflowState {
   garden: Plant[];
   /** Post-session reflections (the tutor's memory of how sessions went). */
   reflections: Reflection[];
+  /** Spaced-repetition flashcards (SM-2 scheduled). */
+  cards: Card[];
 }
 
 export function initialState(refDateISO: string): ReflowState {
@@ -171,6 +189,7 @@ export function initialState(refDateISO: string): ReflowState {
     activeConversationId: null,
     garden: [],
     reflections: [],
+    cards: [],
     progress: {
       // Honest start — everything is earned, nothing is seeded.
       coins: 0,
@@ -384,6 +403,38 @@ export const removeSource = (s: ReflowState, id: string): ReflowState => ({
   ...s,
   sources: s.sources.filter((x) => x.id !== id),
 });
+
+// ── Spaced-repetition flashcards (SM-2, Fable feature 1.1) ───────────────────
+
+export const addCard = (s: ReflowState, card: Card): ReflowState => ({
+  ...s,
+  cards: [card, ...s.cards],
+});
+
+export const removeCard = (s: ReflowState, id: string): ReflowState => ({
+  ...s,
+  cards: s.cards.filter((c) => c.id !== id),
+});
+
+/** Grade one card (quality 0–5) on `todayISO`; reschedules it via SM-2. */
+export function reviewCard(s: ReflowState, id: string, quality: number, todayISO: string): ReflowState {
+  return {
+    ...s,
+    cards: s.cards.map((c) => (c.id === id ? { ...c, sm2: sm2Review(c.sm2, quality, todayISO) } : c)),
+  };
+}
+
+/** All cards due for review on/before `todayISO`, weakest (lowest ease) first. */
+export function dueCards(s: ReflowState, todayISO: string): Card[] {
+  return s.cards
+    .filter((c) => c.sm2.dueAt <= todayISO)
+    .sort((a, b) => a.sm2.easeFactor - b.sm2.easeFactor);
+}
+
+/** Count of due cards for a subject — an allocator signal (feature 2.1). */
+export function dueCountForSubject(s: ReflowState, subjectId: string, todayISO: string): number {
+  return s.cards.filter((c) => c.subjectId === subjectId && c.sm2.dueAt <= todayISO).length;
+}
 
 // ── Session missions + completion (Fable #1, #2) ────────────────────────────
 
