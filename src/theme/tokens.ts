@@ -81,18 +81,24 @@ export const bounded = { width: "100%", maxWidth: CONTENT_MAX_WIDTH, alignSelf: 
  *  • GeistMono   — labels (uppercase, tracked), data rows, timestamps
  *  • NewsreaderItalic — page-level editorial accent ONLY (never inside components)
  */
+// Fonts are EMBEDDED at build time via the `expo-font` config plugin (app.json),
+// so on iOS they must be referenced by their PostScript name (Android/web use the
+// same keys — see the web-only runtime load in app/_layout.tsx). We do NOT use
+// runtime `useFonts` on native: expo-font's `CTFontManagerRegisterFontsForURL`
+// fatally SIGABRTs the re-signed SideStore build at launch. PS names verified via
+// fontTools against the actual .ttf name tables.
 export const fonts = {
-  doto: "Doto",
-  ui: "Geist",
-  uiSemi: "GeistSemiBold",
-  mono: "GeistMono",
-  monoMed: "GeistMonoMedium",
-  editorial: "NewsreaderItalic",
+  doto: "Doto-Regular",
+  ui: "Geist-Regular",
+  uiSemi: "Geist-SemiBold",
+  mono: "GeistMono-Regular",
+  monoMed: "GeistMono-Medium",
+  editorial: "Newsreader-Italic",
   // legacy aliases (kept so existing `fonts.*` refs & type roles resolve)
-  display: "GeistSemiBold",
-  displayItalic: "NewsreaderItalic",
-  light: "Geist",
-  lightItalic: "NewsreaderItalic",
+  display: "Geist-SemiBold",
+  displayItalic: "Newsreader-Italic",
+  light: "Geist-Regular",
+  lightItalic: "Newsreader-Italic",
 } as const;
 
 const t = (

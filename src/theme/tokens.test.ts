@@ -41,9 +41,10 @@ describe("Nothing tokens", () => {
       expect((type[k] as any).fontFamily, k).toMatch(/^(Doto|Geist|Newsreader)/);
     }
     // standalone numbers must be Doto (dot-matrix); labels must be mono
-    expect((type.data as any).fontFamily).toBe("Doto");
-    expect((type.numeral as any).fontFamily).toBe("Doto");
-    expect((type.caption as any).fontFamily).toBe("GeistMono");
+    // (PostScript names — fonts are embedded via the expo-font config plugin)
+    expect((type.data as any).fontFamily).toBe("Doto-Regular");
+    expect((type.numeral as any).fontFamily).toBe("Doto-Regular");
+    expect((type.caption as any).fontFamily).toBe("GeistMono-Regular");
   });
 
   test("subjects are monochrome (differentiate by label, not hue)", () => {

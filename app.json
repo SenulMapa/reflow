@@ -3,7 +3,7 @@
     "name": "Reflow",
     "slug": "reflow",
     "scheme": "reflow",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -27,7 +27,19 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Doto.ttf",
+            "./assets/fonts/Geist-Regular.ttf",
+            "./assets/fonts/Geist-SemiBold.ttf",
+            "./assets/fonts/GeistMono-Regular.ttf",
+            "./assets/fonts/GeistMono-Medium.ttf",
+            "./assets/fonts/Newsreader-Italic.ttf"
+          ]
+        }
+      ],
       "expo-status-bar",
       "expo-updates",
       "expo-web-browser",
