@@ -32,7 +32,7 @@ export const palette = {
     raised: "#EDEDED",        // secondary lift, active rows
     line2: "#CFCFCF",         // visible borders / outlines
     accentText: "#C2141C",    // accent as FOREGROUND (text/border/icon), darkened for contrast
-    dotbg: "rgba(0,0,0,0.42)",// background dot field
+    dotbg: "rgba(0,0,0,0.12)",// background dot field — faint texture, never competes with text
   },
   dark: {
     // ── legacy keys (remapped) ──────────────────────────────────────────────
@@ -54,7 +54,7 @@ export const palette = {
     raised: "#171717",        // secondary lift, active rows
     line2: "#3A3A3A",         // visible borders / outlines
     accentText: "#FF4438",    // accent as FOREGROUND, brightened for contrast
-    dotbg: "rgba(255,255,255,0.42)",
+    dotbg: "rgba(255,255,255,0.14)",
   },
 } as const;
 

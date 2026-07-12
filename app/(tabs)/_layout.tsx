@@ -13,8 +13,20 @@ import { fonts } from "../../src/theme/tokens";
  * filled round dot that inverts with the active tint (display) / inactive
  * (textDim); the mono-uppercase label carries the meaning.
  */
-const dot = () => ({ color }: { color: ColorValue }) =>
-  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />;
+// Active = solid filled dot; inactive = hollow ring. A filled-vs-ring contrast
+// reads as "you are here" far more clearly than two filled dots that differ only
+// in grey value — and stays true to the mono/dot Nothing language.
+const dot = () => ({ color, focused }: { color: ColorValue; focused: boolean }) =>
+  <View
+    style={{
+      width: 9,
+      height: 9,
+      borderRadius: 5,
+      backgroundColor: focused ? color : "transparent",
+      borderWidth: focused ? 0 : 1.5,
+      borderColor: color,
+    }}
+  />;
 
 export default function TabsLayout() {
   const { colors } = useTheme();
