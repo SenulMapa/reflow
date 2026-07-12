@@ -12,19 +12,19 @@
       "iconURL": "https://raw.githubusercontent.com/SenulMapa/reflow/main/assets/icon.png",
       "tintColor": "D9541E",
       "category": "education",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "versionDate": "2026-07-11",
       "versionDescription": "Build from 2026-07-11",
-      "downloadURL": "https://github.com/SenulMapa/reflow/releases/download/v2.0.0-20260711115539/Reflow.ipa",
-      "size": 10244343,
+      "downloadURL": "https://github.com/SenulMapa/reflow/releases/download/v2.1.0-20260711162450/Reflow.ipa",
+      "size": 11829780,
       "minOSVersion": "16.0",
       "versions": [
         {
-          "version": "2.0.0",
+          "version": "2.1.0",
           "date": "2026-07-11",
           "localizedDescription": "Build from 2026-07-11",
-          "downloadURL": "https://github.com/SenulMapa/reflow/releases/download/v2.0.0-20260711115539/Reflow.ipa",
-          "size": 10244343,
+          "downloadURL": "https://github.com/SenulMapa/reflow/releases/download/v2.1.0-20260711162450/Reflow.ipa",
+          "size": 11829780,
           "minOSVersion": "16.0"
         }
       ]

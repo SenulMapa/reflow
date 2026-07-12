@@ -27,6 +27,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history so the source.json auto-commit can rebase onto a
+          # main that advanced during the build (avoids non-fast-forward push).
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -134,5 +138,20 @@ jobs:
           git config user.email "ci@reflow.app"
           git config user.name "Reflow CI"
           git add source.json
-          git commit -m "release: Reflow ${VERSION} (${DATE}) [skip ci]" || echo "no source.json change"
-          git push origin HEAD:main
+          if ! git commit -m "release: Reflow ${VERSION} (${DATE}) [skip ci]"; then
+            echo "no source.json change"
+            exit 0
+          fi
+          # main may have advanced during the ~9-min build (non-fast-forward).
+          # Rebase our single source.json commit onto the latest main and retry.
+          for attempt in 1 2 3 4 5; do
+            if git push origin HEAD:main; then
+              echo "pushed source.json (attempt ${attempt})"
+              exit 0
+            fi
+            echo "push rejected, rebasing onto origin/main (attempt ${attempt})"
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+          done
+          echo "::error::failed to push source.json after 5 attempts"
+          exit 1
