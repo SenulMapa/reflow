@@ -25,10 +25,13 @@ export default function RootLayout() {
     }).catch(() => {});
   }, []);
 
-  // NOTE: no runtime OTA check. expo-updates is disabled (app.json updates.enabled
-  // false) because a manual checkForUpdateAsync() natively aborted the re-signed
-  // SideStore build ~5-10s after boot (v2.2.0). src/lib/ota.ts stays as dormant,
-  // tested infra for a future attempt on a distribution channel that supports it.
+  // OTA: handled AUTOMATICALLY by expo-updates at launch (app.json → updates with
+  // channel "production" + the expo-channel-name requestHeader). No manual check —
+  // this mirrors Tani's proven setup on the identical SideStore pipeline. The
+  // requestHeaders block is the load-bearing part: without it the app asks EAS
+  // with no channel and gets served nothing (Tani "burned one build learning
+  // this"). Version is bumped ONLY alongside a native build; JS-only changes ship
+  // via `eas update --channel production` with NO version bump.
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
