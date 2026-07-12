@@ -6,6 +6,7 @@ import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "../src/components/ErrorBoundary";
+import { checkForOTAUpdate } from "../src/lib/ota";
 
 export default function RootLayout() {
   // FONTS: embedded at BUILD TIME via the `expo-font` config plugin (app.json),
@@ -23,6 +24,14 @@ export default function RootLayout() {
       "DotGothic16-Regular": require("../assets/fonts/DotGothic16-Regular.ttf"),
       "Newsreader-Italic": require("../assets/fonts/Newsreader-Italic.ttf"),
     }).catch(() => {});
+  }, []);
+
+  // OTA: driven MANUALLY, well AFTER boot (never on the launch path — that path is
+  // what crashed the SideStore build). Guarded internally for web/dev and wrapped
+  // so it can never throw. Fire-and-forget; if an update is found it self-reloads.
+  useEffect(() => {
+    const t = setTimeout(() => { void checkForOTAUpdate(); }, 4000);
+    return () => clearTimeout(t);
   }, []);
 
   return (
