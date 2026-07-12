@@ -3,7 +3,7 @@
     "name": "Reflow",
     "slug": "reflow",
     "scheme": "reflow",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -43,11 +43,7 @@
       "policy": "appVersion"
     },
     "updates": {
-      "enabled": true,
-      "url": "https://u.expo.dev/5e3ec5c8-fdd2-4954-8677-8793e10e2f75",
-      "checkAutomatically": "NEVER",
-      "fallbackToCacheTimeout": 0,
-      "disableAntiBrickingMeasures": true
+      "enabled": false
     },
     "extra": {
       "router": {},
