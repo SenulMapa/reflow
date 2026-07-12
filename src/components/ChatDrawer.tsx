@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Alert, View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useEffect, useState } from "react";
+import { Alert, View, Text, Pressable, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
+import { GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+  withSpring,
+  runOnJS,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme/theme";
 import { spacing, radius, type } from "../theme/tokens";
+import { useDecayPan } from "../ui/useDecayPan";
 import { PressableScale } from "./PressableScale";
 import { Hairline } from "./Hairline";
 
@@ -11,8 +19,11 @@ export type DrawerConversation = { id: string; title: string };
 
 /**
  * Chat history drawer (Grok/Tani-style), reflow-themed + adaptive. Slides in from
- * the left over a scrim. Core RN Animated (no worklets) so it ships via OTA.
- * New chat · MRU conversation list · long-press to rename/delete.
+ * the left over a scrim. The panel follows the finger 1:1 with Apple rubber-band
+ * physics (useDecayPan) — a velocity-flick or drag past halfway dismisses it,
+ * otherwise it springs back open. Reanimated worklets run on the UI thread but
+ * ship via OTA (reanimated is already in the native binary). New chat · MRU
+ * conversation list · long-press to rename/delete.
  */
 export function ChatDrawer(props: {
   open: boolean;
@@ -30,28 +41,35 @@ export function ChatDrawer(props: {
   const { width } = useWindowDimensions();
   const panelWidth = Math.min(320, Math.round(width * 0.82));
 
-  const progress = useRef(new Animated.Value(open ? 1 : 0)).current;
   const [mounted, setMounted] = useState(open);
 
+  // Panel x-offset in points: −panelWidth = dismissed (off-screen left), 0 = open.
+  // The gesture drives this live; a dismiss-flick calls onClose (parent flips
+  // `open`), and the effect below animates open/close when `open` changes.
+  const { offset, gesture } = useDecayPan({
+    bounds: [-panelWidth, 0],
+    initial: -panelWidth,
+    dismissTo: "min",
+    onSettle: onClose,
+  });
+
   useEffect(() => {
-    if (open) setMounted(true);
-    const anim = Animated.timing(progress, {
-      toValue: open ? 1 : 0,
-      duration: 240,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    });
-    anim.start(({ finished }) => { if (finished && !open) setMounted(false); });
-    return () => anim.stop();
-  }, [open, progress]);
+    if (open) {
+      setMounted(true);
+      offset.value = withSpring(0, { mass: 1, damping: 30, stiffness: 300 });
+    } else {
+      offset.value = withSpring(
+        -panelWidth,
+        { mass: 1, damping: 32, stiffness: 320 },
+        (finished) => { if (finished) runOnJS(setMounted)(false); },
+      );
+    }
+  }, [open, panelWidth, offset]);
 
-  const translateX = progress.interpolate({ inputRange: [0, 1], outputRange: [-panelWidth, 0] });
-
-  const closeGesture = useMemo(
-    () => Gesture.Pan().runOnJS(true).activeOffsetX(-18).failOffsetY([-22, 22])
-      .onEnd((e) => { if (e.translationX < -50) onClose(); }),
-    [onClose]
-  );
+  const panelStyle = useAnimatedStyle(() => ({ transform: [{ translateX: offset.value }] }));
+  const scrimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(offset.value, [-panelWidth, 0], [0, 1], Extrapolation.CLAMP),
+  }));
 
   const onLongPress = (c: DrawerConversation) => {
     if (!onRename && !onDelete) return;
@@ -65,19 +83,19 @@ export function ChatDrawer(props: {
   if (!mounted) return null;
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.layer]} pointerEvents={open ? "auto" : "box-none"}>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: progress }]}>
+    <View style={[StyleSheet.absoluteFill, styles.layer]} pointerEvents={open ? "auto" : "box-none"}>
+      <Animated.View style={[StyleSheet.absoluteFill, scrimStyle]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Close menu">
           <View style={styles.scrim} />
         </Pressable>
       </Animated.View>
 
-      <GestureDetector gesture={closeGesture}>
+      <GestureDetector gesture={gesture}>
         <Animated.View
           style={[
             styles.panel,
             { width: panelWidth, backgroundColor: colors.bg, borderRightColor: colors.line2, paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 },
-            { transform: [{ translateX }] },
+            panelStyle,
           ]}
         >
           <PressableScale onPress={() => { onNewChat(); onClose(); }} haptic="selection" style={styles.row} accessibilityLabel="New chat">
@@ -119,7 +137,7 @@ export function ChatDrawer(props: {
           </Text>
         </Animated.View>
       </GestureDetector>
-    </Animated.View>
+    </View>
   );
 }
 
